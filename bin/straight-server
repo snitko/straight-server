@@ -1,0 +1,9 @@
+#!/usr/bin/env ruby
+
+require 'bundler'
+Bundler.setup
+
+require 'goliath'
+require 'straight-server'
+
+Faye::WebSocket.load_adapter('goliath')
