@@ -4,6 +4,7 @@ require 'bundler'
 Bundler.setup
 
 require 'goliath'
-require 'straight-server'
+require 'faye/websocket'
+require_relative '../lib/straight-server'
 
 Faye::WebSocket.load_adapter('goliath')

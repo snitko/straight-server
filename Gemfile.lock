@@ -16,6 +16,9 @@ GEM
     eventmachine (1.0.3)
     faraday (0.9.0)
       multipart-post (>= 1.2, < 3)
+    faye-websocket (0.7.4)
+      eventmachine (>= 0.12.0)
+      websocket-driver (>= 0.3.1)
     ffi (1.9.3)
     git (1.2.8)
     github_api (0.11.3)
@@ -90,12 +93,14 @@ GEM
     straight (0.1.0)
       money-tree
     thread_safe (0.3.4)
+    websocket-driver (0.3.4)
 
 PLATFORMS
   ruby
 
 DEPENDENCIES
   bundler (~> 1.0)
+  faye-websocket
   github_api (= 0.11.3)
   goliath
   jeweler (~> 2.0.1)

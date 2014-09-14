@@ -2,6 +2,7 @@ source "http://rubygems.org"
 
 gem "straight"
 gem "goliath"
+gem "faye-websocket"
 
 # Add dependencies to develop your gem here.
 # Include everything needed to run rake, tests, features, etc.
