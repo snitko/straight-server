@@ -1,4 +1,4 @@
-module Straight
+module StraightServer
 
   class OrdersController
 

@@ -90,6 +90,8 @@ GEM
     rspec-mocks (3.1.0)
       rspec-support (~> 3.1.0)
     rspec-support (3.1.0)
+    sequel (4.13.0)
+    sqlite3 (1.3.9)
     straight (0.1.0)
       money-tree
     thread_safe (0.3.4)
@@ -105,4 +107,6 @@ DEPENDENCIES
   goliath
   jeweler (~> 2.0.1)
   rspec
+  sequel
+  sqlite3
   straight

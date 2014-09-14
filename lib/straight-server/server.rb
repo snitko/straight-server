@@ -1,10 +1,12 @@
-module Straight
+module StraightServer
 
   class Server < Goliath::API
 
     use Goliath::Rack::Params
+    include StraightServer::Initializer
 
     def initialize
+      prepare
       super
     end
 

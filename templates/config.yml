@@ -1,0 +1,10 @@
+# If set to db, then use DB table to store gateways,
+# useful when your run many gateways on the same server.
+gateways_source: config
+
+gateways:
+  default: all gateway settings will go here
+
+db:
+  adapter: sqlite
+  name: straight.db

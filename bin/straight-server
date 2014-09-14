@@ -1,8 +1,5 @@
 #!/usr/bin/env ruby
 
-require 'bundler'
-Bundler.setup
-
 require 'goliath'
 require 'faye/websocket'
 require_relative '../lib/straight-server'
