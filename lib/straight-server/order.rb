@@ -38,7 +38,11 @@ module StraightServer
     # an existing record.
     def save
       write_attributes
-      @id = self.class.dataset.insert @fields
+      if id # existing record
+        self.class.dataset.where(id: @id).update(@fields)
+      else
+        @id = self.class.dataset.insert @fields
+      end
       true
     end
 

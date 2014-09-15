@@ -16,10 +16,17 @@ RSpec.describe StraightServer::Order do
 
   describe "DB interaction" do
 
-    it "saves order into the database" do
+    it "saves a new order into the database" do
       expect(@order.save).to be_truthy
-      orders = DB[:orders]
-      expect(orders[:keychain_id => 1]).not_to be_nil 
+      expect(DB[:orders][:keychain_id => 1]).not_to be_nil 
+    end
+
+    it "updates an existing order" do
+      @order.save
+      expect(DB[:orders][:keychain_id => 1][:status]).to eq(0) 
+      @order.status = 1
+      @order.save
+      expect(DB[:orders][:keychain_id => 1][:status]).to eq(1) 
     end
 
     it "finds first order in the database by id" do
