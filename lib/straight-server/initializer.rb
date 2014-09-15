@@ -16,10 +16,12 @@ module StraightServer
 
       def create_config_file
         puts "\e[1;33mWARNING!\e[0m \e[33mNo file ~/.straight/config was found. Created a sample one for you.\e[0m"
-        puts "If you don't like the default settings, you should edit it and restart the server.\n\n"
+        puts "You should edit it and try starting the server again.\n"
 
         FileUtils.mkdir_p(STRAIGHT_CONFIG_PATH) unless File.exist?(STRAIGHT_CONFIG_PATH)
         FileUtils.cp(GEM_ROOT + '/templates/config.yml', ENV['HOME'] + '/.straight/') 
+        puts "Shutting down now.\n\n"
+        exit
       end
 
       def read_config_file

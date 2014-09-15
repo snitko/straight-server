@@ -1,9 +1,5 @@
 module StraightServer
 
-  class << self
-    attr_accessor :db_connection
-  end
-
   class Config
 
     class << self

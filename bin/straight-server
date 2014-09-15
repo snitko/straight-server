@@ -3,5 +3,6 @@
 require 'goliath'
 require 'faye/websocket'
 require_relative '../lib/straight-server'
+require_relative 'straight-server/server'
 
 Faye::WebSocket.load_adapter('goliath')
