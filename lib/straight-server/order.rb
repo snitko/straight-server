@@ -2,7 +2,7 @@ module StraightServer
  
   class Order < Sequel::Model 
 
-    prepend Straight::Order
+    prepend Straight::OrderModule
 
     def gateway
       Gateway.find_by_id(gateway_id)

@@ -2,7 +2,7 @@ module StraightServer
  
   class Gateway
 
-    prepend Straight::Gateway
+    prepend Straight::GatewayModule
 
   end
 
