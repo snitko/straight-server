@@ -8,10 +8,12 @@ gateways:
     pubkey: 'xpub-000'
     confirmations_required: 0
     order_class: "StraightServer::Order"
+    secret: 'secret'
   second_gateway:
     pubkey: 'xpub-001'
     confirmations_required: 0
     order_class: "StraightServer::Order"
+    secret: 'secret'
 
 db:
   adapter: sqlite

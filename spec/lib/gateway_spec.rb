@@ -20,4 +20,12 @@ RSpec.describe StraightServer::Gateway do
     
   end
 
+  it "checks for signature when creating a new order" do
+    gateway = StraightServer::Gateway.find_by_id(1)
+    gateway.last_keychain_id = 0
+    expect( -> { gateway.create_order(amount: 1, signature: 'invalid') }).to raise_exception(StraightServer::GatewayModule::InvalidSignature)
+    expect(gateway).to receive(:order_for_id).with(amount: 1, keychain_id: 1).once
+    gateway.create_order(amount: 1, signature: Digest::MD5.hexdigest('1secret'))
+  end
+
 end

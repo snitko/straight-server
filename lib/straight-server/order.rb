@@ -8,6 +8,9 @@ module StraightServer
       @gateway ||= Gateway.find_by_id(gateway_id)
     end
 
+    def create(attrs={})
+    end
+
   end
 
 end
