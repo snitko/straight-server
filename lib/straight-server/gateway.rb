@@ -6,7 +6,16 @@ module StraightServer
 
       prepend Straight::GatewayModule
       
-      @@gateways = [] # read the config file
+      @@gateways = []
+      StraightServer::Config.gateways.each do |name, attrs|
+        gateway = self.new
+        gateway.pubkey                 = attrs['pubkey']
+        gateway.confirmations_required = attrs['confirmations_required'].to_i
+        gateway.order_class            = attrs['order_class']
+        gateway.name                   = name
+        @@gateways << gateway
+      end
+      
       attr_accessor :id
 
       def self.find_by_id(id)

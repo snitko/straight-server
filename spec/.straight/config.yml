@@ -3,7 +3,15 @@
 gateways_source: config
 
 gateways:
-  default: all gateway settings will go here
+
+  default:
+    pubkey: 'xpub-000'
+    confirmations_required: 0
+    order_class: "StraightServer::Order"
+  second_gateway:
+    pubkey: 'xpub-001'
+    confirmations_required: 0
+    order_class: "StraightServer::Order"
 
 db:
   adapter: sqlite
