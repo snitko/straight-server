@@ -25,7 +25,7 @@ module StraightServer
       end
 
       def read_config_file
-        YAML.load_file(ENV['HOME'] + '/.straight/config.yml').each do |k,v|
+        YAML.load_file(STRAIGHT_CONFIG_PATH + '/config.yml').each do |k,v|
           StraightServer::Config.send(k + '=', v)
         end
       end

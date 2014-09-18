@@ -5,7 +5,7 @@ module StraightServer
     prepend Straight::OrderModule
 
     def gateway
-      Gateway.find_by_id(gateway_id)
+      @gateway ||= Gateway.find_by_id(gateway_id)
     end
 
   end
