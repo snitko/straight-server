@@ -13,10 +13,17 @@ module StraightServer
     def create_order(attrs={})
       signature = attrs.delete(:signature)
       if md5(attrs) == signature
-        order_for_id(amount: attrs[:amount], keychain_id: last_keychain_id+1)
+        order_for_id(amount: attrs[:amount], keychain_id: increment_last_keychain_id!)
+        self.save
       else
         raise InvalidSignature
       end
+    end
+
+    def increment_last_keychain_id!
+      self.last_keychain_id += 1
+      self.save
+      self.last_keychain_id
     end
 
     private
@@ -27,49 +34,73 @@ module StraightServer
 
   end
 
-  if StraightServer::Config.gateways_source = 'config'
+  # Uses database to load and save attributes
+  class GatewayOnDB < Sequel::Model(:gateways)
+    prepend Straight::GatewayModule
+    prepend GatewayModule
+  end
 
-    class Gateway
+  # Uses a config file to load attributes and a special _last_keychain_id file
+  # to store last_keychain_id
+  class GatewayOnConfig
 
-      prepend Straight::GatewayModule
-      include GatewayModule
+    prepend Straight::GatewayModule
+    prepend GatewayModule
 
-      # This is the key that allows users (those, who use the gateway,
-      # online stores, for instance) to connect and create orders.
-      # It is not used directly, but is mixed with all the params being sent
-      # and a MD5 hash is calculted. Then the gateway checks whether the
-      # MD5 hash is correct.
-      attr_accessor :secret
+    # This is the key that allows users (those, who use the gateway,
+    # online stores, for instance) to connect and create orders.
+    # It is not used directly, but is mixed with all the params being sent
+    # and a MD5 hash is calculted. Then the gateway checks whether the
+    # MD5 hash is correct.
+    attr_accessor :secret
 
-      # This is used to generate the next address to accept payments
-      attr_accessor :last_keychain_id
- 
-      @@gateways = []
-      StraightServer::Config.gateways.each do |name, attrs|
-        gateway = self.new
-        gateway.pubkey                 = attrs['pubkey']
-        gateway.confirmations_required = attrs['confirmations_required'].to_i
-        gateway.order_class            = attrs['order_class']
-        gateway.secret                 = attrs['secret']
-        gateway.name                   = name
-        @@gateways << gateway
-      end
-      
-      attr_accessor :id
+    # This is used to generate the next address to accept payments
+    attr_accessor :last_keychain_id
 
-      def self.find_by_id(id)
-        @@gateways[id-1]
-      end
-
+    # Because this is a config based gateway, we only save last_keychain_id
+    # and nothing more.
+    def save
+      File.open(@last_keychain_id_file, 'w') {|f| f.write(last_keychain_id) }
     end
 
+    # Loads last_keychain_id from a file in the .straight dir.
+    # If the file doesn't exist, we create it. Later, whenever an attribute is updated,
+    # we save it to the file.
+    def load_last_keychain_id!
+      @last_keychain_id_file = StraightServer::Initializer::STRAIGHT_CONFIG_PATH +
+                               "/#{name}_last_keychain_id"
+      if File.exists?(@last_keychain_id_file)
+        self.last_keychain_id = File.read(@last_keychain_id_file).to_i
+      else
+        self.last_keychain_id = 0
+        save
+      end
+    end
+
+    @@gateways = []
+    StraightServer::Config.gateways.each do |name, attrs|
+      gateway = self.new
+      gateway.pubkey                 = attrs['pubkey']
+      gateway.confirmations_required = attrs['confirmations_required'].to_i
+      gateway.order_class            = attrs['order_class']
+      gateway.secret                 = attrs['secret']
+      gateway.name                   = name
+      gateway.load_last_keychain_id!
+      @@gateways << gateway
+    end
+    
+    attr_accessor :id
+
+    def self.find_by_id(id)
+      @@gateways[id-1]
+    end
+
+  end
+
+  Gateway = if StraightServer::Config.gateways_source = 'config'
+    GatewayOnConfig
   else
-
-    class Gateway < Sequel::Model
-      prepend Straight::GatewayModule
-      include GatewayModule
-    end
-
+    GatewayOnDB
   end
 
 end

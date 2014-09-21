@@ -20,6 +20,9 @@ require_relative "../lib/straight-server/config"
 require_relative "../lib/straight-server/initializer"
 include StraightServer::Initializer
 
+# This is required to cleanup the test .straight dir
+require 'fileutils'
+
 read_config_file
 
 # 4. Load the rest of the files, including models, which are now ready
@@ -31,6 +34,19 @@ RSpec.configure do |config|
 
   config.before(:suite) do
     StraightServer.db_connection = DB #use a memory DB
+  end
+
+  config.before(:each) do
+    StraightServer::GatewayOnConfig.class_variable_get(:@@gateways).each do |g|
+      g.last_keychain_id = 0
+      g.save
+    end
+  end
+
+  config.after(:all) do
+    ["default_last_keychain_id", "second_gateway_last_keychain_id"].each do |f|
+      FileUtils.rm "#{ENV['HOME']}/.straight/#{f}" if File.exists?("#{ENV['HOME']}/.straight/#{f}")
+    end
   end
 
 end
