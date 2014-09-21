@@ -7,13 +7,15 @@ module StraightServer
   module GatewayModule
 
     class InvalidSignature < Exception; end
+    class InvalidOrderId   < Exception; end
     
     # Creates a new order and saves into the DB. Checks if the MD5 hash
     # is correct first.
     def create_order(attrs={})
       signature = attrs.delete(:signature)
-      if md5(attrs) == signature
-        order_for_id(amount: attrs[:amount], keychain_id: increment_last_keychain_id!)
+      raise InvalidOrderId if check_signature && (attrs[:id].nil? || attrs[:id].to_i <= 0)
+      if !check_signature || md5(attrs[:id]) == signature
+        order_for_id(id: attrs[:id], amount: attrs[:amount], keychain_id: increment_last_keychain_id!)
         self.save
       else
         raise InvalidSignature
@@ -28,8 +30,8 @@ module StraightServer
 
     private
 
-      def md5(params)
-        Digest::MD5.hexdigest(params.values.map(&:to_s).join + secret)
+      def md5(order_id)
+        Digest::MD5.hexdigest(order_id.to_s + secret)
       end
 
   end
@@ -56,6 +58,10 @@ module StraightServer
 
     # This is used to generate the next address to accept payments
     attr_accessor :last_keychain_id
+
+    # If set to false, doesn't require an unique id of the order along with
+    # the signed md5 hash of that id + secret to be passed into the #create_order method.
+    attr_accessor :check_signature
 
     # Because this is a config based gateway, we only save last_keychain_id
     # and nothing more.
@@ -84,6 +90,7 @@ module StraightServer
       gateway.confirmations_required = attrs['confirmations_required'].to_i
       gateway.order_class            = attrs['order_class']
       gateway.secret                 = attrs['secret']
+      gateway.check_signature        = attrs['check_signature']
       gateway.name                   = name
       gateway.load_last_keychain_id!
       @@gateways << gateway

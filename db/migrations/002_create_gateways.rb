@@ -9,6 +9,7 @@ Sequel.migration do
       String  :order_class, null: false
       String  :secret,      null: false
       String  :name,        null: false
+      Boolean :check_signature, null: false, default: false
     end
     add_index :gateways, :id,     unique: true
     add_index :gateways, :pubkey, unique: true

@@ -9,11 +9,13 @@ gateways:
     confirmations_required: 0
     order_class: "StraightServer::Order"
     secret: 'secret'
+    check_signature: true
   second_gateway:
     pubkey: 'xpub-001'
     confirmations_required: 0
     order_class: "StraightServer::Order"
     secret: 'secret'
+    check_signature: false
 
 db:
   adapter: sqlite
