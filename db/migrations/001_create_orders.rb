@@ -9,6 +9,9 @@ Sequel.migration do
       Bignum  :amount,      null: false
       Integer :gateway_id,  null: false
     end
+    add_index :orders, :id,      unique: true
+    add_index :orders, :address, unique: true
+    add_index :orders, [:keychain_id, :gateway_id], unique: true
   end
 
   down do

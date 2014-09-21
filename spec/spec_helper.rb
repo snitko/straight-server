@@ -30,7 +30,24 @@ read_config_file
 require_relative "../lib/straight-server"
 require_relative "support/custom_matchers"
 
+require "factory_girl"
+require_relative "factories"
+
+class StraightServer::Order
+
+  def save!
+    if result = save
+      return result
+    else
+      raise "Racord wasn't saved."
+    end
+  end
+
+end
+
 RSpec.configure do |config|
+
+  config.include FactoryGirl::Syntax::Methods
 
   config.before(:suite) do
     StraightServer.db_connection = DB #use a memory DB

@@ -10,6 +10,9 @@ Sequel.migration do
       String  :secret,      null: false
       String  :name,        null: false
     end
+    add_index :gateways, :id,     unique: true
+    add_index :gateways, :pubkey, unique: true
+    add_index :gateways, :name,   unique: true
   end
 
   down do
