@@ -4,6 +4,7 @@ module StraightServer
 
     prepend Straight::OrderModule
     plugin :validation_helpers
+    plugin :timestamps, create: :created_at, update: :updated_at
 
     def gateway
       @gateway ||= Gateway.find_by_id(gateway_id)

@@ -40,6 +40,7 @@ module StraightServer
   class GatewayOnDB < Sequel::Model(:gateways)
     prepend Straight::GatewayModule
     prepend GatewayModule
+    plugin :timestamps, create: :created_at, update: :updated_at
   end
 
   # Uses a config file to load attributes and a special _last_keychain_id file

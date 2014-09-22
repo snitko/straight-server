@@ -10,6 +10,8 @@ Sequel.migration do
       String  :secret,      null: false
       String  :name,        null: false
       Boolean :check_signature, null: false, default: false
+      DateTime :created_at, null: false
+      DateTime :updated_at
     end
     add_index :gateways, :id,     unique: true
     add_index :gateways, :pubkey, unique: true

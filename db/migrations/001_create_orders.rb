@@ -8,6 +8,8 @@ Sequel.migration do
       Integer :keychain_id, null: false
       Bignum  :amount,      null: false
       Integer :gateway_id,  null: false
+      DateTime :created_at, null: false
+      DateTime :updated_at
     end
     add_index :orders, :id,      unique: true
     add_index :orders, :address, unique: true
