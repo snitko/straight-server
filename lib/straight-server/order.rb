@@ -21,6 +21,10 @@ module StraightServer
       validates_presence [:id, :address, :keychain_id, :gateway_id, :amount]
     end
 
+    def to_http_params
+      "order_id=#{id}&amount=#{amount}&status=#{status}&address=#{address}&tid=#{tid}"
+    end
+
   end
 
 end

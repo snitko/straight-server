@@ -6,14 +6,14 @@ module StraightServer
   # in one o the classes below.
   module GatewayModule
 
-    class InvalidSignature       < Exception; end
-    class InvalidOrderId         < Exception; end
-    class CallbackUrlBadResponse < Exception; end
+    class InvalidSignature < Exception; end
+    class InvalidOrderId   < Exception; end
 
     CALLBACK_URL_ATTEMPT_TIMEFRAME = 3600 # seconds
 
-    def initialize
+    def initialize(*attrs)
       @order_callbacks = [ lambda { |order| send_callback_http_request(order) } ]
+      super
     end
     
     # Creates a new order and saves into the DB. Checks if the MD5 hash
@@ -43,7 +43,7 @@ module StraightServer
 
       def send_callback_http_request(order, delay: 5)
         return if callback_url.nil?
-        uri = URI.parse(callback_url)
+        uri = URI.parse("#{callback_url}?#{order.to_http_params}")
         begin
           http = uri.read(read_timeout: 4)
           raise CallbackUrlBadResponse unless http.status.first.to_i == 200

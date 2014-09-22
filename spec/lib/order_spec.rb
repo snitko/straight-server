@@ -13,10 +13,15 @@ RSpec.describe StraightServer::Order do
     allow(StraightServer::Gateway).to receive(:find_by_id).and_return(@gateway)
   end
 
+  it "prepares data as http params" do
+    allow(@order).to receive(:tid).and_return("tid1")
+    expect(@order.to_http_params).to eq("order_id=#{@order.id}&amount=10&status=#{@order.status}&address=#{@order.address}&tid=tid1")
+  end
+
   describe "DB interaction" do
 
     it "saves a new order into the database" do
-      expect(DB[:orders][:keychain_id => 1]).not_to be_nil 
+      expect(DB[:orders][:keychain_id => @order.id]).not_to be_nil 
     end
 
     it "updates an existing order" do

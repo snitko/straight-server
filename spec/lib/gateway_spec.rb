@@ -31,6 +31,7 @@ RSpec.describe StraightServer::Gateway do
     before(:each) do
       @response_mock = double("http response mock")
       @order = create(:order)
+      allow(@order).to receive(:status).and_return(1)
     end
 
     it "sends a request to the callback_url" do
@@ -44,7 +45,7 @@ RSpec.describe StraightServer::Gateway do
       uri_mock = double("URI mock")
       allow(@gateway).to receive(:sleep).exactly(10).times
       expect(uri_mock).to receive(:read).exactly(11).times.and_return(@response_mock)
-      expect(URI).to receive(:parse).exactly(11).times.and_return(uri_mock)
+      expect(URI).to receive(:parse).with('http://localhost:3000/payment-callback?' + @order.to_http_params).exactly(11).times.and_return(uri_mock)
       @gateway.order_status_changed(@order)
     end
 
