@@ -13,7 +13,7 @@ RSpec.describe StraightServer::Gateway do
     @gateway.create_order(amount: 1, signature: Digest::MD5.hexdigest('1secret'), id: 1)
   end
 
-  it "checks md5 signature only if that settings is on for a particular gateway" do
+  it "checks md5 signature only if that setting is set ON for a particular gateway" do
     gateway1 = StraightServer::GatewayOnConfig.find_by_id(1)
     gateway2 = StraightServer::GatewayOnConfig.find_by_id(2)
     expect(gateway2).to receive(:order_for_id).with(amount: 1, keychain_id: 1, id: 1).once

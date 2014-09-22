@@ -3,7 +3,7 @@ require 'digest/md5'
 module StraightServer
 
   # This module contains common features of Gateway, later to be included
-  # in one o the classes below.
+  # in one of the classes below.
   module GatewayModule
 
     class InvalidSignature < Exception; end
@@ -12,7 +12,10 @@ module StraightServer
     CALLBACK_URL_ATTEMPT_TIMEFRAME = 3600 # seconds
 
     def initialize(*attrs)
+      
+      # When the status of an order changes, we send an http request to the callback_url
       @order_callbacks = [ lambda { |order| send_callback_http_request(order) } ]
+
       super
     end
     
@@ -29,6 +32,10 @@ module StraightServer
       end
     end
 
+    # Used to track the current keychain_id number, which is used by
+    # Straight::Gateway to generate addresses from the pubkey. The number is supposed
+    # to be incremented by 1. In the case of a Config file type of Gateway, the value
+    # is stored in a file in the .straight directory.
     def increment_last_keychain_id!
       self.last_keychain_id += 1
       self.save
@@ -41,6 +48,10 @@ module StraightServer
         Digest::MD5.hexdigest(order_id.to_s + secret)
       end
 
+      # Tries to send a callback HTTP request to the resource specified
+      # in the #callback_url. If it fails for any reason, it keeps trying for an hour (3600 seconds)
+      # making 10 http requests, each delayed by twice the time the previous one was delayed.
+      # This method is supposed to be running in a separate thread.
       def send_callback_http_request(order, delay: 5)
         return if callback_url.nil?
         uri = URI.parse("#{callback_url}?#{order.to_http_params}")
@@ -111,7 +122,12 @@ module StraightServer
       end
     end
 
+    # This will later be used in the #find_by_id. Because we don't use a DB,
+    # the id will actually be the index of an element in this Array. Thus,
+    # the order in which gateways follow in the config file is important.
     @@gateways = []
+
+    # Create instances of Gateway by reading attributes from Config
     StraightServer::Config.gateways.each do |name, attrs|
       gateway = self.new
       gateway.pubkey                 = attrs['pubkey']
@@ -127,12 +143,18 @@ module StraightServer
     
     attr_accessor :id
 
+    # This method is a replacement for the Sequel's model one used in DB version of the gateway
+    # and it finds gateways using the index of @@gateways Array.
     def self.find_by_id(id)
       @@gateways[id-1]
     end
 
   end
 
+  # It may not be a perfect way to implement such a thing, but it gives enough flexibility to people
+  # so they can simply start using a single gateway on their machines, a gateway which attributes are defined
+  # in a config file instead of a DB. That way they don't need special tools to access the DB and create
+  # a gateway, but can simply edit the config file.
   Gateway = if StraightServer::Config.gateways_source = 'config'
     GatewayOnConfig
   else
