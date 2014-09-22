@@ -2,12 +2,19 @@ require 'digest/md5'
 
 module StraightServer
 
-  # This module contains commong features of Gateway, later to be included
+  # This module contains common features of Gateway, later to be included
   # in one o the classes below.
   module GatewayModule
 
-    class InvalidSignature < Exception; end
-    class InvalidOrderId   < Exception; end
+    class InvalidSignature       < Exception; end
+    class InvalidOrderId         < Exception; end
+    class CallbackUrlBadResponse < Exception; end
+
+    CALLBACK_URL_ATTEMPT_TIMEFRAME = 3600 # seconds
+
+    def initialize
+      @order_callbacks = [ lambda { |order| send_callback_http_request(order) } ]
+    end
     
     # Creates a new order and saves into the DB. Checks if the MD5 hash
     # is correct first.
@@ -32,6 +39,20 @@ module StraightServer
 
       def md5(order_id)
         Digest::MD5.hexdigest(order_id.to_s + secret)
+      end
+
+      def send_callback_http_request(order, delay: 5)
+        return if callback_url.nil?
+        uri = URI.parse(callback_url)
+        begin
+          http = uri.read(read_timeout: 4)
+          raise CallbackUrlBadResponse unless http.status.first.to_i == 200
+        rescue Exception => e
+          if delay < CALLBACK_URL_ATTEMPT_TIMEFRAME
+            sleep(delay)
+            send_callback_http_request(order, delay: delay*2)
+          end
+        end
       end
 
   end
@@ -64,6 +85,12 @@ module StraightServer
     # the signed md5 hash of that id + secret to be passed into the #create_order method.
     attr_accessor :check_signature
 
+    # A url to which the gateway will send an HTTP request with the status of the order data
+    # (in JSON) when the status of the order is changed. The response should always be 200,
+    # otherwise the gateway will awesome something went wrong and will keep trying to send requests
+    # to this url according to a specific shedule.
+    attr_accessor :callback_url
+
     # Because this is a config based gateway, we only save last_keychain_id
     # and nothing more.
     def save
@@ -92,6 +119,7 @@ module StraightServer
       gateway.order_class            = attrs['order_class']
       gateway.secret                 = attrs['secret']
       gateway.check_signature        = attrs['check_signature']
+      gateway.callback_url           = attrs['callback_url']
       gateway.name                   = name
       gateway.load_last_keychain_id!
       @@gateways << gateway

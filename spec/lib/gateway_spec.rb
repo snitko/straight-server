@@ -26,6 +26,30 @@ RSpec.describe StraightServer::Gateway do
     expect( -> { @gateway.create_order(amount: 1, signature: 'invalid', id: '') }).to raise_exception(StraightServer::GatewayModule::InvalidOrderId)
   end
 
+  context "callback url" do
+
+    before(:each) do
+      @response_mock = double("http response mock")
+      @order = create(:order)
+    end
+
+    it "sends a request to the callback_url" do
+      allow(@response_mock).to receive(:status).and_return(["200", "OK"])
+      expect(URI).to receive_message_chain(:parse, :read).and_return(@response_mock)
+      @gateway.order_status_changed(@order)
+    end
+
+    it "keeps sending request according to the callback schedule if there's an en error" do
+      allow(@response_mock).to receive(:status).and_return(["404", "OK"])
+      uri_mock = double("URI mock")
+      allow(@gateway).to receive(:sleep).exactly(10).times
+      expect(uri_mock).to receive(:read).exactly(11).times.and_return(@response_mock)
+      expect(URI).to receive(:parse).exactly(11).times.and_return(uri_mock)
+      @gateway.order_status_changed(@order)
+    end
+
+  end
+
   describe "config based gateway" do
 
     it "loads all the gateways from the config file and assigns correct attributes" do

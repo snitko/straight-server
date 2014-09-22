@@ -10,12 +10,14 @@ gateways:
     order_class: "StraightServer::Order"
     secret: 'secret'
     check_signature: true
+    callback_url: 'http://localhost:3000'
   second_gateway:
     pubkey: 'xpub-001'
     confirmations_required: 0
     order_class: "StraightServer::Order"
     secret: 'secret'
     check_signature: false
+    callback_url: 'http://localhost:3001/payment-callback'
 
 db:
   adapter: sqlite
