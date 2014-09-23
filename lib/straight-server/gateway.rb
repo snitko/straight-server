@@ -22,6 +22,7 @@ module StraightServer
     # Creates a new order and saves into the DB. Checks if the MD5 hash
     # is correct first.
     def create_order(attrs={})
+      StraightServer.logger.info "Creating new order with attrs: #{attrs}"
       signature = attrs.delete(:signature)
       raise InvalidOrderId if check_signature && (attrs[:id].nil? || attrs[:id].to_i <= 0)
       if !check_signature || md5(attrs[:id]) == signature
@@ -30,8 +31,10 @@ module StraightServer
         order.gateway    = self
         order.save
         self.save
+        StraightServer.logger.info "Order #{order.id} created: #{order.to_h}"
         order
       else
+        StraightServer.logger.warn "WARNING: invalid signature, cannot create an order for gateway (#{@gateway.id})"
         raise InvalidSignature
       end
     end

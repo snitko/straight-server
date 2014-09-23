@@ -8,6 +8,7 @@ module StraightServer
     def prepare
       create_config_file unless File.exist?(STRAIGHT_CONFIG_PATH + '/config.yml')
       read_config_file
+      create_logger
       connect_to_db
       run_migrations if migrations_pending?
     end
@@ -59,6 +60,16 @@ module StraightServer
 
       def migrations_pending?
         !Sequel::Migrator.is_current?(StraightServer.db_connection, GEM_ROOT + '/db/migrations/')
+      end
+
+      def create_logger
+        StraightServer.logger = Logmaster.new(
+          log_level:       Logger.const_get(Config.logmaster['log_level'].upcase),
+          file:            STRAIGHT_CONFIG_PATH + '/' + Config.logmaster['file'],
+          raise_exception: Config.logmaster['raise_exception'],
+          name:            Config.logmaster['name'],
+          email_config:    Config.logmaster['email_config']
+        )
       end
 
   end

@@ -20,12 +20,18 @@ module StraightServer
 
       # This will be more complicated in the future. For now it
       # just checks that the path starts with /gateways/:id/orders
-      if env['REQUEST_PATH'] =~ /\A\/gateways\/.+?\/orders(\/.+)?\Z/
-        controller = OrdersController.new(env)
-        controller.response
-      else
-        [404, {}, "#{env['REQUEST_METHOD']} #{env['REQUEST_PATH']} Not found"]
+
+      StraightServer.logger.watch_exceptions do
+        if env['REQUEST_PATH'] =~ /\A\/gateways\/.+?\/orders(\/.+)?\Z/
+          controller = OrdersController.new(env)
+          return controller.response
+        else
+          return [404, {}, "#{env['REQUEST_METHOD']} #{env['REQUEST_PATH']} Not found"]
+        end
       end
+
+      # Assume things went wrong, if they didn't go right
+      [500, {}, "#{env['REQUEST_METHOD']} #{env['REQUEST_PATH']} Server Error"]
 
     end
 
