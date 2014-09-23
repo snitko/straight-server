@@ -25,8 +25,12 @@ module StraightServer
       signature = attrs.delete(:signature)
       raise InvalidOrderId if check_signature && (attrs[:id].nil? || attrs[:id].to_i <= 0)
       if !check_signature || md5(attrs[:id]) == signature
-        order_for_id(id: attrs[:id], amount: attrs[:amount], keychain_id: increment_last_keychain_id!)
+        order            = order_for_keychain_id(amount: attrs[:amount], keychain_id: increment_last_keychain_id!)
+        order.id         = attrs[:id].to_i if attrs[:id]
+        order.gateway    = self
+        order.save
         self.save
+        order
       else
         raise InvalidSignature
       end
@@ -71,7 +75,7 @@ module StraightServer
   # Uses database to load and save attributes
   class GatewayOnDB < Sequel::Model(:gateways)
     prepend Straight::GatewayModule
-    prepend GatewayModule
+    include GatewayModule
     plugin :timestamps, create: :created_at, update: :updated_at
   end
 
@@ -80,7 +84,7 @@ module StraightServer
   class GatewayOnConfig
 
     prepend Straight::GatewayModule
-    prepend GatewayModule
+    include GatewayModule
 
     # This is the key that allows users (those, who use the gateway,
     # online stores, for instance) to connect and create orders.
@@ -101,6 +105,10 @@ module StraightServer
     # otherwise the gateway will awesome something went wrong and will keep trying to send requests
     # to this url according to a specific shedule.
     attr_accessor :callback_url
+
+    # This will be assigned the number that is the order in which this gateway follows in
+    # the config file.
+    attr_accessor :id
 
     # Because this is a config based gateway, we only save last_keychain_id
     # and nothing more.
@@ -128,7 +136,9 @@ module StraightServer
     @@gateways = []
 
     # Create instances of Gateway by reading attributes from Config
+    i = 0
     StraightServer::Config.gateways.each do |name, attrs|
+      i += 1
       gateway = self.new
       gateway.pubkey                 = attrs['pubkey']
       gateway.confirmations_required = attrs['confirmations_required'].to_i
@@ -137,16 +147,16 @@ module StraightServer
       gateway.check_signature        = attrs['check_signature']
       gateway.callback_url           = attrs['callback_url']
       gateway.name                   = name
+      gateway.id                     = i
       gateway.load_last_keychain_id!
       @@gateways << gateway
     end
     
-    attr_accessor :id
 
     # This method is a replacement for the Sequel's model one used in DB version of the gateway
     # and it finds gateways using the index of @@gateways Array.
     def self.find_by_id(id)
-      @@gateways[id-1]
+      @@gateways[id.to_i-1]
     end
 
   end

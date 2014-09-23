@@ -6,27 +6,39 @@ module StraightServer
 
     def initialize(env)
       @env          = env
+      @params       = env.params
       @method       = env['REQUEST_METHOD']
       @request_path = env['REQUEST_PATH'].split('/').delete_if { |s| s.nil? || s.empty? }
+      dispatch
     end
 
     def create
-      [200, {}, "order created"]
+      begin
+        order = @gateway.create_order(amount: @params['amount'])
+        [200, {}, { order: order.to_h }.to_json ]
+      rescue Sequel::ValidationFailed => e
+        [409, {}, "Invalid order: #{e.message}" ]
+      end
     end
 
     def show
-      [200, {}, "order info"]
+      [200, {}, "order #{@params['id']}"]
     end
 
-    def order_websocket
-      [200, {}, "order websocket"]
+    def websocket
+      [200, {}, "websocket"]
     end
 
     private
 
       def dispatch
-        puts "dispatching..."
+        
+        puts "#{@method} #{@env['REQUEST_PATH']}\n PARAMS: #{@params}\n\n"
+
+        @gateway = StraightServer::Gateway.find_by_id(@request_path[1])
+
         @response = if @request_path[3] # if an order id is supplied
+          @params['id'] = @request_path[3].to_i
           if @request_path[4] == 'ws'
             order_websocket
           elsif @request_path[4].nil? && @method == 'GET'

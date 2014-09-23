@@ -8,9 +8,6 @@ require_relative 'straight-server/config'
 require_relative 'straight-server/initializer'
 require_relative 'straight-server/orders_controller'
 
-require_relative 'straight-server/order'
-require_relative 'straight-server/gateway'
-
 module StraightServer
 
   class << self

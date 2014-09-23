@@ -7,6 +7,9 @@ module StraightServer
 
     def initialize
       prepare
+      require_relative 'order'
+      require_relative 'gateway'
+      require_relative 'orders_controller'
       super
     end
 

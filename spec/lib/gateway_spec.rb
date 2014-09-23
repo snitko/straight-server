@@ -9,14 +9,14 @@ RSpec.describe StraightServer::Gateway do
   it "checks for signature when creating a new order" do
     @gateway.last_keychain_id = 0
     expect( -> { @gateway.create_order(amount: 1, signature: 'invalid', id: 1) }).to raise_exception(StraightServer::GatewayModule::InvalidSignature)
-    expect(@gateway).to receive(:order_for_id).with(amount: 1, keychain_id: 1, id: 1).once
+    expect(@gateway).to receive(:order_for_keychain_id).with(amount: 1, keychain_id: 1, id: 1).once
     @gateway.create_order(amount: 1, signature: Digest::MD5.hexdigest('1secret'), id: 1)
   end
 
   it "checks md5 signature only if that setting is set ON for a particular gateway" do
     gateway1 = StraightServer::GatewayOnConfig.find_by_id(1)
     gateway2 = StraightServer::GatewayOnConfig.find_by_id(2)
-    expect(gateway2).to receive(:order_for_id).with(amount: 1, keychain_id: 1, id: 1).once
+    expect(gateway2).to receive(:order_for_keychain_id).with(amount: 1, keychain_id: 1, id: 1).once
     expect( -> { gateway1.create_order(amount: 1, signature: 'invalid', id: 1) }).to raise_exception(StraightServer::GatewayModule::InvalidSignature)
     expect( -> { gateway2.create_order(amount: 1, signature: 'invalid', id: 1) }).not_to raise_exception()
   end
@@ -75,7 +75,7 @@ RSpec.describe StraightServer::Gateway do
       @gateway.increment_last_keychain_id!
       expect(File.read("#{ENV['HOME']}/.straight/default_last_keychain_id").to_i).to eq(1)
 
-      expect(@gateway).to receive(:order_for_id).with(amount: 1, keychain_id: 2, id: 1).once
+      expect(@gateway).to receive(:order_for_keychain_id).with(amount: 1, keychain_id: 2, id: 1).once
       @gateway.create_order(amount: 1, signature: Digest::MD5.hexdigest('1secret'), id: 1)
       expect(File.read("#{ENV['HOME']}/.straight/default_last_keychain_id").to_i).to eq(2)
     end
@@ -100,7 +100,7 @@ RSpec.describe StraightServer::Gateway do
       @gateway.increment_last_keychain_id!
       expect(DB[:gateways][:name => 'default'][:last_keychain_id]).to eq(1)
 
-      expect(@gateway).to receive(:order_for_id).with(amount: 1, keychain_id: 2, id: 1).once
+      expect(@gateway).to receive(:order_for_keychain_id).with(amount: 1, keychain_id: 2, id: 1).once
       @gateway.create_order(amount: 1, signature: Digest::MD5.hexdigest('1secret'), id: 1)
       expect(DB[:gateways][:name => 'default'][:last_keychain_id]).to eq(2)
     end

@@ -3,6 +3,9 @@
 # 1. First, load dependencies and connect to the Database
 require 'sequel'
 require 'straight'
+require 'fileutils' # This is required to cleanup the test .straight dir
+require 'hashie'
+
 Sequel.extension :migration
 DB = Sequel.sqlite
 
@@ -20,15 +23,16 @@ require_relative "../lib/straight-server/config"
 require_relative "../lib/straight-server/initializer"
 include StraightServer::Initializer
 
-# This is required to cleanup the test .straight dir
-require 'fileutils'
-
 read_config_file
 
 # 4. Load the rest of the files, including models, which are now ready
 # to be used as intended and will follow all the previous configuration.
-require_relative "../lib/straight-server"
-require_relative "support/custom_matchers"
+require_relative '../lib/straight-server/order'
+require_relative '../lib/straight-server/gateway'
+require_relative '../lib/straight-server/orders_controller'
+require_relative '../lib/straight-server'
+
+require_relative 'support/custom_matchers'
 
 require "factory_girl"
 require_relative "factories"

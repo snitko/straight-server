@@ -118,6 +118,7 @@ DEPENDENCIES
   faye-websocket
   github_api (= 0.11.3)
   goliath
+  hashie
   jeweler (~> 2.0.1)
   rspec
   sequel
