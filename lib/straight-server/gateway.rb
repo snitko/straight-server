@@ -25,7 +25,7 @@ module StraightServer
       StraightServer.logger.info "Creating new order with attrs: #{attrs}"
       signature = attrs.delete(:signature)
       raise InvalidOrderId if check_signature && (attrs[:id].nil? || attrs[:id].to_i <= 0)
-      if !check_signature || md5(attrs[:id]) == signature
+      if !check_signature || sign_with_secret(attrs[:id]) == signature
         order            = order_for_keychain_id(amount: attrs[:amount], keychain_id: increment_last_keychain_id!)
         order.id         = attrs[:id].to_i if attrs[:id]
         order.gateway    = self
@@ -51,8 +51,10 @@ module StraightServer
 
     private
 
-      def md5(order_id)
-        HMAC::SHA1.new(order_id.to_s + secret).hexdigest
+      def sign_with_secret(content, level: 1)
+        result = content.to_s + secret
+        level.times { result = HMAC::SHA1.new(result+secret).hexdigest }
+        result
       end
 
       # Tries to send a callback HTTP request to the resource specified
@@ -62,7 +64,8 @@ module StraightServer
       def send_callback_http_request(order, delay: 5)
         StraightServer.logger.info "Attempting to send request to the callback url for order #{order.id}..."
         return if callback_url.nil?
-        uri = URI.parse("#{callback_url}?#{order.to_http_params}")
+        signature = self.check_signature ? "&signature=#{sign_with_secret(order.id, level: 2)}" : ''
+        uri = URI.parse("#{callback_url}?#{order.to_http_params}#{signature}")
         begin
           http = uri.read(read_timeout: 4)
           raise CallbackUrlBadResponse unless http.status.first.to_i == 200
