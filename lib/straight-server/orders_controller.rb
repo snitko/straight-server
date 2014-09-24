@@ -30,9 +30,11 @@ module StraightServer
       order = Order[@params['id']]
       #order.status = 0
       #order.save
-      order.status(reload: true)
-      order.save if order.status_changed?
-      [200, {}, order.to_json ]
+      if order
+        order.status(reload: true)
+        order.save if order.status_changed?
+        [200, {}, order.to_json ]
+      end
     end
 
     def websocket
