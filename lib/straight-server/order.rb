@@ -2,7 +2,7 @@ module StraightServer
  
   class Order < Sequel::Model 
 
-    prepend Straight::OrderModule
+    include Straight::OrderModule
     plugin :validation_helpers
     plugin :timestamps, create: :created_at, update: :updated_at
 
@@ -24,6 +24,14 @@ module StraightServer
       @status_changed
     end
 
+    def to_h
+      super.merge({ id: id })
+    end
+
+    def to_json
+      to_h.to_json
+    end
+
     def validate
       super # calling Sequel::Model validator
       errors.add(:amount,     "is invalid") if !amount.kind_of?(Numeric)     || amount <= 0
@@ -38,10 +46,12 @@ module StraightServer
 
     def start_periodic_status_check
       StraightServer.logger.info "Starting periodic status checks of the order #{self.id}"
+      super
     end
 
     def check_status_on_schedule(period: 10, iteration_index: 0)
       StraightServer.logger.info "Checking status of order #{self.id}"
+      super
     end
 
   end

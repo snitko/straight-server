@@ -1,5 +1,3 @@
-require 'digest/md5'
-
 module StraightServer
 
   # This module contains common features of Gateway, later to be included
@@ -54,7 +52,7 @@ module StraightServer
     private
 
       def md5(order_id)
-        Digest::MD5.hexdigest(order_id.to_s + secret)
+        HMAC::SHA1.new(order_id.to_s + secret).hexdigest
       end
 
       # Tries to send a callback HTTP request to the resource specified
@@ -81,7 +79,7 @@ module StraightServer
 
   # Uses database to load and save attributes
   class GatewayOnDB < Sequel::Model(:gateways)
-    prepend Straight::GatewayModule
+    include Straight::GatewayModule
     include GatewayModule
     plugin :timestamps, create: :created_at, update: :updated_at
   end
@@ -90,7 +88,7 @@ module StraightServer
   # to store last_keychain_id
   class GatewayOnConfig
 
-    prepend Straight::GatewayModule
+    include Straight::GatewayModule
     include GatewayModule
 
     # This is the key that allows users (those, who use the gateway,

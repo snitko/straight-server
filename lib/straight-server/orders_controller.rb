@@ -18,7 +18,7 @@ module StraightServer
         StraightServer::Thread.new do
           order.start_periodic_status_check
         end
-        [200, {}, { order: order.to_h }.to_json ]
+        [200, {}, order.to_json ]
       rescue Sequel::ValidationFailed => e
         StraightServer.logger.warn "WARNING: validation errors in order, cannot create it."
         [409, {}, "Invalid order: #{e.message}" ]

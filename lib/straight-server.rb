@@ -3,6 +3,8 @@ require 'json'
 require 'sequel'
 require 'straight'
 require 'logmaster'
+require 'hmac'
+require 'hmac-sha1'
 Sequel.extension :migration
 
 require_relative 'straight-server/config'
