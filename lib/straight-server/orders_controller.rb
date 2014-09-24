@@ -15,7 +15,15 @@ module StraightServer
     def create
       begin
         order = @gateway.create_order(amount: @params['amount'])
-        # TODO: start tracking the address in a separate thread
+        #Thread.new do
+          #x = 0
+          #while x < 100
+            #puts "******"
+            #sleep 1
+            #x += 1
+          #end
+          #order.start_periodic_status_check
+        #end
         [200, {}, { order: order.to_h }.to_json ]
       rescue Sequel::ValidationFailed => e
         StraightServer.logger.warn "WARNING: validation errors in order, cannot create it."
@@ -35,7 +43,7 @@ module StraightServer
 
       def dispatch
         
-        puts "\n"
+        StraightServer.logger.blank_lines
         StraightServer.logger.info "#{@method} #{@env['REQUEST_PATH']}\n#{@params}"
 
         @gateway = StraightServer::Gateway.find_by_id(@request_path[1])

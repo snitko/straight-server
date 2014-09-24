@@ -63,8 +63,9 @@ module StraightServer
       end
 
       def create_logger
-        StraightServer.logger = Logmaster.new(
-          log_level:       Logger.const_get(Config.logmaster['log_level'].upcase),
+        require_relative 'logger'
+        StraightServer.logger = StraightServer::Logger.new(
+          log_level:       ::Logger.const_get(Config.logmaster['log_level'].upcase),
           file:            STRAIGHT_CONFIG_PATH + '/' + Config.logmaster['file'],
           raise_exception: Config.logmaster['raise_exception'],
           name:            Config.logmaster['name'],

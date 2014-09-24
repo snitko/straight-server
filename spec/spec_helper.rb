@@ -58,6 +58,11 @@ RSpec.configure do |config|
   end
 
   config.before(:each) do
+    logger_mock = double("logger mock")
+    [:debug, :info, :warn, :fatal, :unknown, :blank_lines].each do |e|
+      allow(logger_mock).to receive(e)
+    end
+    StraightServer.logger = logger_mock
     StraightServer::GatewayOnConfig.class_variable_get(:@@gateways).each do |g|
       g.last_keychain_id = 0
       g.save

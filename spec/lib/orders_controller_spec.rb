@@ -23,6 +23,10 @@ RSpec.describe StraightServer::OrdersController do
       expect(response[2]).to eq("Invalid order: amount is invalid")
     end
 
+    it "starts tracking the order status in a separate thread" do
+      send_request "POST", '/gateways/2/orders', amount: 10
+    end
+
   end
 
   describe "show action" do

@@ -31,6 +31,16 @@ module StraightServer
       { status: status, amount: amount, address: address, tid: tid }
     end
 
+    def start_periodic_status_check
+      StraightServer.logger.info "Starting periodic status checks of the order #{self.id}"
+      super
+    end
+
+    def check_status_on_schedule(*args)
+      StraightServer.logger.info "Checking status of order #{self.id}"
+      super
+    end
+
   end
 
 end

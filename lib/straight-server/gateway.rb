@@ -14,7 +14,8 @@ module StraightServer
     def initialize(*attrs)
       
       # When the status of an order changes, we send an http request to the callback_url
-      @order_callbacks = [ lambda { |order| send_callback_http_request(order) } ]
+      @order_callbacks     = [ lambda { |order| send_callback_http_request(order) } ]
+      @blockchain_adapters = [Straight::BlockchainInfoAdapter.mainnet_adapter, Straight::HelloblockIoAdapter.mainnet_adapter]
 
       super
     end
@@ -34,7 +35,7 @@ module StraightServer
         StraightServer.logger.info "Order #{order.id} created: #{order.to_h}"
         order
       else
-        StraightServer.logger.warn "WARNING: invalid signature, cannot create an order for gateway (#{@gateway.id})"
+        StraightServer.logger.warn "WARNING: invalid signature, cannot create an order for gateway (#{id})"
         raise InvalidSignature
       end
     end
