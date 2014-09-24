@@ -13,6 +13,7 @@ RSpec.describe StraightServer::OrdersController do
   describe "create action" do
 
     it "creates an order and renders its attrs in json" do
+      allow(StraightServer::Thread).to receive(:new) # ignore periodic status checks, we're not testing it here
       send_request "POST", '/gateways/2/orders', amount: 10
       expect(response).to render_json_with(order: { status: 0, amount: 10, address: "address1", tid: nil })
     end
@@ -24,6 +25,10 @@ RSpec.describe StraightServer::OrdersController do
     end
 
     it "starts tracking the order status in a separate thread" do
+      order_mock = double("order mock")
+      expect(order_mock).to receive(:start_periodic_status_check)
+      allow(order_mock).to  receive(:to_h).and_return({})
+      expect(@gateway).to   receive(:create_order).and_return(order_mock)
       send_request "POST", '/gateways/2/orders', amount: 10
     end
 

@@ -15,8 +15,17 @@ module StraightServer
       @gateway        = g
     end
 
+    def save
+      super # calling Sequel::Model save
+      @status_changed = false
+    end
+
+    def status_changed?
+      @status_changed
+    end
+
     def validate
-      super
+      super # calling Sequel::Model validator
       errors.add(:amount,     "is invalid") if !amount.kind_of?(Numeric)     || amount <= 0
       errors.add(:gateway_id, "is invalid") if !gateway_id.kind_of?(Numeric) || gateway_id <= 0
       validates_unique   :id, :address, [:keychain_id, :gateway_id]
@@ -27,18 +36,12 @@ module StraightServer
       "order_id=#{id}&amount=#{amount}&status=#{status}&address=#{address}&tid=#{tid}"
     end
 
-    def to_h
-      { status: status, amount: amount, address: address, tid: tid }
-    end
-
     def start_periodic_status_check
       StraightServer.logger.info "Starting periodic status checks of the order #{self.id}"
-      super
     end
 
-    def check_status_on_schedule(*args)
+    def check_status_on_schedule(period: 10, iteration_index: 0)
       StraightServer.logger.info "Checking status of order #{self.id}"
-      super
     end
 
   end

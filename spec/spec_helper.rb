@@ -38,15 +38,13 @@ require "factory_girl"
 require_relative "factories"
 
 class StraightServer::Order
+  alias :save! :save
+end
 
-  def save!
-    if result = save
-      return result
-    else
-      raise "Racord wasn't saved."
-    end
+class StraightServer::Thread
+  def self.new(&block)
+    block.call
   end
-
 end
 
 RSpec.configure do |config|

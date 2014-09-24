@@ -14,8 +14,9 @@ module StraightServer
     def initialize(*attrs)
       
       # When the status of an order changes, we send an http request to the callback_url
-      @order_callbacks     = [ lambda { |order| send_callback_http_request(order) } ]
+      @order_callbacks     = [ lambda { |order| StraightServer::Thread.new { send_callback_http_request(order) }} ]
       @blockchain_adapters = [Straight::BlockchainInfoAdapter.mainnet_adapter, Straight::HelloblockIoAdapter.mainnet_adapter]
+      @status_check_schedule = Straight::GatewayModule::DEFAULT_STATUS_CHECK_SCHEDULE
 
       super
     end
@@ -35,7 +36,7 @@ module StraightServer
         StraightServer.logger.info "Order #{order.id} created: #{order.to_h}"
         order
       else
-        StraightServer.logger.warn "WARNING: invalid signature, cannot create an order for gateway (#{id})"
+        StraightServer.logger.warn "Invalid signature, cannot create an order for gateway (#{id})"
         raise InvalidSignature
       end
     end
@@ -61,6 +62,7 @@ module StraightServer
       # making 10 http requests, each delayed by twice the time the previous one was delayed.
       # This method is supposed to be running in a separate thread.
       def send_callback_http_request(order, delay: 5)
+        StraightServer.logger.info "Attempting to send request to the callback url for order #{order.id}..."
         return if callback_url.nil?
         uri = URI.parse("#{callback_url}?#{order.to_http_params}")
         begin
@@ -72,6 +74,7 @@ module StraightServer
             send_callback_http_request(order, delay: delay*2)
           end
         end
+        StraightServer.logger.info "Callback request for order #{order.id} performed successfully"
       end
 
   end

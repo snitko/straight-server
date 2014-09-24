@@ -42,8 +42,8 @@ RSpec.describe StraightServer::Gateway do
       @gateway.order_status_changed(@order)
     end
 
-    it "keeps sending request according to the callback schedule if there's an en error" do
-      allow(@response_mock).to receive(:status).and_return(["404", "OK"])
+    it "keeps sending request according to the callback schedule if there's an error" do
+      allow(@response_mock).to receive(:status).and_return(["404", "Not found"])
       uri_mock = double("URI mock")
       allow(@gateway).to receive(:sleep).exactly(10).times
       expect(uri_mock).to receive(:read).exactly(11).times.and_return(@response_mock)

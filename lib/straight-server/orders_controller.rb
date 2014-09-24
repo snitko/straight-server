@@ -15,15 +15,9 @@ module StraightServer
     def create
       begin
         order = @gateway.create_order(amount: @params['amount'])
-        #Thread.new do
-          #x = 0
-          #while x < 100
-            #puts "******"
-            #sleep 1
-            #x += 1
-          #end
-          #order.start_periodic_status_check
-        #end
+        StraightServer::Thread.new do
+          order.start_periodic_status_check
+        end
         [200, {}, { order: order.to_h }.to_json ]
       rescue Sequel::ValidationFailed => e
         StraightServer.logger.warn "WARNING: validation errors in order, cannot create it."
@@ -32,7 +26,13 @@ module StraightServer
     end
 
     def show
-      [200, {}, "order #{@params['id']}"]
+      #p StraightServer.db_connection[:orders][:id => 47]
+      order = Order[@params['id']]
+      #order.status = 0
+      #order.save
+      order.status(reload: true)
+      order.save if order.status_changed?
+      [200, {}, order.to_json ]
     end
 
     def websocket

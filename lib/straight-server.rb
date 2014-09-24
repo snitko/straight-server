@@ -7,6 +7,7 @@ Sequel.extension :migration
 
 require_relative 'straight-server/config'
 require_relative 'straight-server/initializer'
+require_relative 'straight-server/thread'
 require_relative 'straight-server/orders_controller'
 
 module StraightServer
