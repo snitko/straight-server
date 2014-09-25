@@ -67,8 +67,9 @@ module StraightServer
       # making 10 http requests, each delayed by twice the time the previous one was delayed.
       # This method is supposed to be running in a separate thread.
       def send_callback_http_request(order, delay: 5)
-        StraightServer.logger.info "Attempting to send request to the callback url for order #{order.id}..."
         return if callback_url.nil?
+
+        StraightServer.logger.info "Attempting to send request to the callback url for order #{order.id} to #{callback_url}..."
 
         # Composing the request uri here
         signature = self.check_signature ? "&signature=#{sign_with_secret(order.id, level: 2)}" : ''

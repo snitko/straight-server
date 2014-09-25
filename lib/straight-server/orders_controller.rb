@@ -26,10 +26,7 @@ module StraightServer
     end
 
     def show
-      #p StraightServer.db_connection[:orders][:id => 47]
       order = Order[@params['id']]
-      #order.status = 0
-      #order.save
       if order
         order.status(reload: true)
         order.save if order.status_changed?

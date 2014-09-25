@@ -36,6 +36,33 @@ RSpec.describe StraightServer::OrdersController do
 
   describe "show action" do
 
+    before(:each) do
+      @order_mock = double('order mock')
+      allow(@order_mock).to receive(:status).and_return(2)
+      allow(@order_mock).to receive(:to_json).and_return("order json mock")
+    end
+
+    it "renders json info about an order if it is found" do
+      allow(@order_mock).to receive(:status_changed?).and_return(false)
+      expect(StraightServer::Order).to receive(:[]).with(1).and_return(@order_mock)
+      send_request "GET", '/gateways/2/orders/1'
+      expect(response).to eq([200, {}, "order json mock"])
+    end
+
+    it "saves an order if status is updated" do
+      allow(@order_mock).to receive(:status_changed?).and_return(true)
+      expect(@order_mock).to receive(:save)
+      expect(StraightServer::Order).to receive(:[]).with(1).and_return(@order_mock)
+      send_request "GET", '/gateways/2/orders/1'
+      expect(response).to eq([200, {}, "order json mock"])
+    end
+
+    it "renders 404 if order is not found" do
+      expect(StraightServer::Order).to receive(:[]).with(1).and_return(nil)
+      send_request "GET", '/gateways/2/orders/1'
+      expect(response).to eq([404, {}, "GET /gateways/2/orders/1 Not found"])
+    end
+
   end
 
   describe "websocket action" do
