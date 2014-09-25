@@ -31,6 +31,10 @@ RSpec.describe StraightServer::Gateway do
   context "callback url" do
 
     before(:each) do
+      @gateway = StraightServer::GatewayOnConfig.find_by_id(2) # Gateway 2 doesn't require signatures
+    end
+
+    before(:each) do
       @response_mock = double("http response mock")
       @order = create(:order)
       allow(@order).to receive(:status).and_return(1)
@@ -44,7 +48,6 @@ RSpec.describe StraightServer::Gateway do
     end
 
     it "keeps sending request according to the callback schedule if there's an error" do
-      @gateway = StraightServer::GatewayOnConfig.find_by_id(2)
       allow(@response_mock).to receive(:status).and_return(["404", "Not found"])
       uri_mock = double("URI mock")
       allow(@gateway).to receive(:sleep).exactly(10).times
@@ -54,9 +57,20 @@ RSpec.describe StraightServer::Gateway do
     end
 
     it "signs the callback if gateway has a secret" do
+      @gateway = StraightServer::GatewayOnConfig.find_by_id(1) # Gateway 1 requires signatures
       allow(@response_mock).to receive(:status).and_return(["200", "OK"])
       allow(@response_mock).to receive(:read).and_return(@response_mock)
       expect(URI).to receive(:parse).with('http://localhost:3000/payment-callback?' + @order.to_http_params + "&signature=#{hmac_sha1(hmac_sha1(@order.id, 'secret'), 'secret')}").and_return(@response_mock)
+      @gateway.order_status_changed(@order)
+    end
+
+    it "receives random data in :data params and sends it back in a callback request" do
+      @order.data = 'some random data'
+      expect(@gateway).to receive(:order_for_keychain_id).with(amount: 1, keychain_id: 1).once.and_return(@order)
+      @gateway.create_order(amount: 1, data: 'some random data')
+      allow(@response_mock).to receive(:status).and_return(["200", "OK"])
+      allow(@response_mock).to receive(:read).and_return(@response_mock)
+      expect(URI).to receive(:parse).with('http://localhost:3001/payment-callback?' + @order.to_http_params + "&data=#{@order.data}").and_return(@response_mock)
       @gateway.order_status_changed(@order)
     end
 

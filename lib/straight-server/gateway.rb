@@ -28,6 +28,7 @@ module StraightServer
       if !check_signature || sign_with_secret(attrs[:id]) == signature
         order            = order_for_keychain_id(amount: attrs[:amount], keychain_id: increment_last_keychain_id!)
         order.id         = attrs[:id].to_i if attrs[:id]
+        order.data       = attrs[:data]    if attrs[:data]
         order.gateway    = self
         order.save
         self.save
@@ -68,8 +69,12 @@ module StraightServer
       def send_callback_http_request(order, delay: 5)
         StraightServer.logger.info "Attempting to send request to the callback url for order #{order.id}..."
         return if callback_url.nil?
+
+        # Composing the request uri here
         signature = self.check_signature ? "&signature=#{sign_with_secret(order.id, level: 2)}" : ''
-        uri = URI.parse("#{callback_url}?#{order.to_http_params}#{signature}")
+        data      = order.data           ? "&data=#{order.data}"                                : ''
+        uri       = URI.parse(callback_url + '?' + order.to_http_params + signature + data)
+
         begin
           http = uri.read(read_timeout: 4)
           raise CallbackUrlBadResponse unless http.status.first.to_i == 200
@@ -79,6 +84,7 @@ module StraightServer
             send_callback_http_request(order, delay: delay*2)
           end
         end
+
         StraightServer.logger.info "Callback request for order #{order.id} performed successfully"
       end
 

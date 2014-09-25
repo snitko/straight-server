@@ -9,6 +9,7 @@ Sequel.migration do
       Integer :keychain_id, null: false
       Bignum  :amount,      null: false
       Integer :gateway_id,  null: false
+      String  :data
       DateTime :created_at, null: false
       DateTime :updated_at
     end
