@@ -52,8 +52,12 @@ module StraightServer
     private
 
       def sign_with_secret(content, level: 1)
-        result = content.to_s + secret
-        level.times { result = HMAC::SHA1.new(result+secret).hexdigest }
+        result = content.to_s
+        level.times do
+          h = HMAC::SHA1.new(secret)
+          h << result
+          result = h.hexdigest
+        end
         result
       end
 
