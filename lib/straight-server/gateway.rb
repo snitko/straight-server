@@ -72,6 +72,7 @@ module StraightServer
         StraightServer.logger.info "Closing ws connection for #{order.id}"
       end
       @websockets[order.id] = ws
+      ws
     end
 
     def send_order_to_websocket_client(order)

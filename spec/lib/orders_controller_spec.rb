@@ -71,6 +71,7 @@ RSpec.describe StraightServer::OrdersController do
       @gateway.instance_variable_set(:@websockets, {})
       @ws_mock    = double("websocket mock")
       @order_mock = double("order mock")
+      allow(@ws_mock).to receive(:rack_response).and_return("ws rack response")
       [:id, :gateway=, :save, :to_h, :id=].each { |m| allow(@order_mock).to receive(m) }
       allow(@ws_mock).to receive(:on)
       allow(Faye::WebSocket).to receive(:new).and_return(@ws_mock)
@@ -80,7 +81,7 @@ RSpec.describe StraightServer::OrdersController do
       allow(@order_mock).to receive(:status).and_return(0)
       allow(StraightServer::Order).to receive(:[]).with(1).and_return(@order_mock)
       send_request "GET", '/gateways/2/orders/1/websocket'
-      expect(response).to eq(@ws_mock)
+      expect(response).to eq("ws rack response")
     end
 
     it "returns 403 when socket already exists" do

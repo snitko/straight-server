@@ -39,7 +39,7 @@ module StraightServer
       if order
         begin
           @gateway.add_websocket_for_order ws = Faye::WebSocket.new(@env), order
-          ws
+          ws.rack_response
         rescue Gateway::WebsocketExists
           [403, {}, "Someone is already listening to that order"]
         rescue Gateway::WebsocketForCompletedOrder

@@ -1,8 +1,5 @@
 #!/usr/bin/env ruby
 
 require 'goliath'
-require 'faye/websocket'
 require_relative '../lib/straight-server'
 require_relative '../lib/straight-server/server'
-
-Faye::WebSocket.load_adapter('goliath')
