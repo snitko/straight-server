@@ -4,8 +4,9 @@ module StraightServer
   # in one of the classes below.
   module GatewayModule
 
-    class InvalidSignature < Exception; end
-    class InvalidOrderId   < Exception; end
+    class InvalidSignature       < Exception; end
+    class InvalidOrderId         < Exception; end
+    class CallbackUrlBadResponse < Exception; end
 
     CALLBACK_URL_ATTEMPT_TIMEFRAME = 3600 # seconds
 
@@ -77,15 +78,19 @@ module StraightServer
         uri       = URI.parse(callback_url + '?' + order.to_http_params + signature + data)
 
         begin
-          http = uri.read(read_timeout: 4)
-          raise CallbackUrlBadResponse unless http.status.first.to_i == 200
+          response = Net::HTTP.get_response(uri)
+          order.callback_response = { code: response.code, body: response.body }
+          order.save
+          raise CallbackUrlBadResponse unless response.code.to_i == 200
         rescue Exception => e
           if delay < CALLBACK_URL_ATTEMPT_TIMEFRAME
             sleep(delay)
             send_callback_http_request(order, delay: delay*2)
+          else
+            StraightServer.logger.warn "Callback request for order #{order.id} faile, see order's #callback_response field for details"
           end
         end
-
+        
         StraightServer.logger.info "Callback request for order #{order.id} performed successfully"
       end
 

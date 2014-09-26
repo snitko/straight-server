@@ -30,7 +30,7 @@ module StraightServer
       if order
         order.status(reload: true)
         order.save if order.status_changed?
-        [200, {}, order.to_json ]
+        [200, {}, order.to_json]
       end
     end
 

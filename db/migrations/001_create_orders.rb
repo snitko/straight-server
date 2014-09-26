@@ -10,6 +10,7 @@ Sequel.migration do
       Bignum  :amount,      null: false
       Integer :gateway_id,  null: false
       String  :data
+      String  :callback_response, text: true
       DateTime :created_at, null: false
       DateTime :updated_at
     end

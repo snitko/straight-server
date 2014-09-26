@@ -6,6 +6,9 @@ module StraightServer
     plugin :validation_helpers
     plugin :timestamps, create: :created_at, update: :updated_at
 
+    plugin :serialization
+    serialize_attributes :marshal, :callback_response
+
     def gateway
       @gateway ||= Gateway.find_by_id(gateway_id)
     end

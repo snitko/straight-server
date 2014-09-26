@@ -36,31 +36,31 @@ RSpec.describe StraightServer::Gateway do
 
     before(:each) do
       @response_mock = double("http response mock")
+      expect(@response_mock).to receive(:body).once.and_return('body')
       @order = create(:order)
       allow(@order).to receive(:status).and_return(1)
       allow(@order).to receive(:tid).and_return('tid1')
     end
 
     it "sends a request to the callback_url" do
-      allow(@response_mock).to receive(:status).and_return(["200", "OK"])
-      expect(URI).to receive_message_chain(:parse, :read).and_return(@response_mock)
+      expect(@response_mock).to receive(:code).twice.and_return("200")
+      expect(Net::HTTP).to receive(:get_response).and_return(@response_mock)
       @gateway.order_status_changed(@order)
     end
 
     it "keeps sending request according to the callback schedule if there's an error" do
-      allow(@response_mock).to receive(:status).and_return(["404", "Not found"])
-      uri_mock = double("URI mock")
-      allow(@gateway).to receive(:sleep).exactly(10).times
-      expect(uri_mock).to receive(:read).exactly(11).times.and_return(@response_mock)
-      expect(URI).to receive(:parse).with('http://localhost:3001/payment-callback?' + @order.to_http_params).exactly(11).times.and_return(uri_mock)
+      expect(@response_mock).to receive(:code).twice.and_return("404")
+      expect(@gateway).to receive(:sleep).exactly(10).times
+      expect(Net::HTTP).to receive(:get_response).exactly(11).times.and_return(@response_mock)
+      expect(URI).to receive(:parse).with('http://localhost:3001/payment-callback?' + @order.to_http_params).exactly(11).times
       @gateway.order_status_changed(@order)
     end
 
     it "signs the callback if gateway has a secret" do
       @gateway = StraightServer::GatewayOnConfig.find_by_id(1) # Gateway 1 requires signatures
-      allow(@response_mock).to receive(:status).and_return(["200", "OK"])
-      allow(@response_mock).to receive(:read).and_return(@response_mock)
-      expect(URI).to receive(:parse).with('http://localhost:3000/payment-callback?' + @order.to_http_params + "&signature=#{hmac_sha1(hmac_sha1(@order.id, 'secret'), 'secret')}").and_return(@response_mock)
+      expect(@response_mock).to receive(:code).twice.and_return("200")
+      expect(URI).to receive(:parse).with('http://localhost:3000/payment-callback?' + @order.to_http_params + "&signature=#{hmac_sha1(hmac_sha1(@order.id, 'secret'), 'secret')}")
+      expect(Net::HTTP).to receive(:get_response).and_return(@response_mock)
       @gateway.order_status_changed(@order)
     end
 
@@ -68,10 +68,17 @@ RSpec.describe StraightServer::Gateway do
       @order.data = 'some random data'
       expect(@gateway).to receive(:order_for_keychain_id).with(amount: 1, keychain_id: 1).once.and_return(@order)
       @gateway.create_order(amount: 1, data: 'some random data')
-      allow(@response_mock).to receive(:status).and_return(["200", "OK"])
-      allow(@response_mock).to receive(:read).and_return(@response_mock)
-      expect(URI).to receive(:parse).with('http://localhost:3001/payment-callback?' + @order.to_http_params + "&data=#{@order.data}").and_return(@response_mock)
+      expect(@response_mock).to receive(:code).twice.and_return("200")
+      expect(Net::HTTP).to receive(:get_response).and_return(@response_mock)
+      expect(URI).to receive(:parse).with('http://localhost:3001/payment-callback?' + @order.to_http_params + "&data=#{@order.data}")
       @gateway.order_status_changed(@order)
+    end
+
+    it "saves callback url response in the order's record in DB" do
+      allow(@response_mock).to receive(:code).and_return("200")
+      allow(Net::HTTP).to receive(:get_response).and_return(@response_mock)
+      @gateway.order_status_changed(@order)
+      expect(@order.callback_response).to eq({code: "200", body: "body"}) 
     end
 
   end

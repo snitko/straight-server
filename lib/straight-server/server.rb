@@ -14,9 +14,9 @@ module StraightServer
     end
 
     def response(env)
-      # POST /gateways/1/orders      - create order
-      # GET  /gateways/1/orders/1    - see order info
-      #      /gateways/1/orders/1/ws - subscribe to order status changes via a websocket
+      # POST /gateways/1/orders   - create order
+      # GET  /gateways/1/orders/1 - see order info
+      #      /gateways/1/orders/1/websocket - subscribe to order status changes via a websocket
 
       # This will be more complicated in the future. For now it
       # just checks that the path starts with /gateways/:id/orders

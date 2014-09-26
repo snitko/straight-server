@@ -5,6 +5,7 @@ require 'straight'
 require 'logmaster'
 require 'hmac'
 require 'hmac-sha1'
+require 'net/http'
 Sequel.extension :migration
 
 require_relative 'straight-server/config'
