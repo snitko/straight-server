@@ -4,18 +4,30 @@ module StraightServer
   # in one of the classes below.
   module GatewayModule
 
-    class InvalidSignature       < Exception; end
-    class InvalidOrderId         < Exception; end
-    class CallbackUrlBadResponse < Exception; end
+    class InvalidSignature           < Exception; end
+    class InvalidOrderId             < Exception; end
+    class CallbackUrlBadResponse     < Exception; end
+    class WebsocketExists            < Exception; end
+    class WebsocketForCompletedOrder < Exception; end
 
     CALLBACK_URL_ATTEMPT_TIMEFRAME = 3600 # seconds
 
     def initialize(*attrs)
       
       # When the status of an order changes, we send an http request to the callback_url
-      @order_callbacks     = [ lambda { |order| StraightServer::Thread.new { send_callback_http_request(order) }} ]
+      # and also notify a websocket client (if present, of course).
+      @order_callbacks     = [
+        lambda do |order|
+          StraightServer::Thread.new do
+            send_callback_http_request     order
+            send_order_to_websocket_client order
+          end
+        end
+      ]
+
       @blockchain_adapters = [Straight::BlockchainInfoAdapter.mainnet_adapter, Straight::HelloblockIoAdapter.mainnet_adapter]
       @status_check_schedule = Straight::GatewayModule::DEFAULT_STATUS_CHECK_SCHEDULE
+      @websockets            = {}
 
       super
     end
@@ -49,6 +61,24 @@ module StraightServer
       self.last_keychain_id += 1
       self.save
       self.last_keychain_id
+    end
+
+    def add_websocket_for_order(ws, order)
+      raise WebsocketExists            unless @websockets[order.id].nil?
+      raise WebsocketForCompletedOrder unless order.status < 2
+      StraightServer.logger.info "Opening ws connection for #{order.id}"
+      ws.on(:close) do |event|
+        @websockets.delete(order.id)
+        StraightServer.logger.info "Closing ws connection for #{order.id}"
+      end
+      @websockets[order.id] = ws
+    end
+
+    def send_order_to_websocket_client(order)
+      if ws = @websockets[order.id]
+        ws.send(order.to_json)
+        ws.close
+      end
     end
 
     private

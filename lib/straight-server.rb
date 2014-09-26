@@ -6,6 +6,7 @@ require 'logmaster'
 require 'hmac'
 require 'hmac-sha1'
 require 'net/http'
+require 'faye/websocket'
 Sequel.extension :migration
 
 require_relative 'straight-server/config'

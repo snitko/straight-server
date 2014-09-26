@@ -67,6 +67,37 @@ RSpec.describe StraightServer::OrdersController do
 
   describe "websocket action" do
 
+    before(:each) do
+      @gateway.instance_variable_set(:@websockets, {})
+      @ws_mock    = double("websocket mock")
+      @order_mock = double("order mock")
+      [:id, :gateway=, :save, :to_h, :id=].each { |m| allow(@order_mock).to receive(m) }
+      allow(@ws_mock).to receive(:on)
+      allow(Faye::WebSocket).to receive(:new).and_return(@ws_mock)
+    end
+
+    it "returns a websocket connection" do
+      allow(@order_mock).to receive(:status).and_return(0)
+      allow(StraightServer::Order).to receive(:[]).with(1).and_return(@order_mock)
+      send_request "GET", '/gateways/2/orders/1/websocket'
+      expect(response).to eq(@ws_mock)
+    end
+
+    it "returns 403 when socket already exists" do
+      allow(@order_mock).to receive(:status).and_return(0)
+      allow(StraightServer::Order).to receive(:[]).with(1).twice.and_return(@order_mock)
+      send_request "GET", '/gateways/2/orders/1/websocket'
+      send_request "GET", '/gateways/2/orders/1/websocket'
+      expect(response).to eq([403, {}, "Someone is already listening to that order"])
+    end
+
+    it "returns 403 when order has is completed (status > 1 )" do
+      allow(@order_mock).to receive(:status).and_return(2)
+      allow(StraightServer::Order).to receive(:[]).with(1).and_return(@order_mock)
+      send_request "GET", '/gateways/2/orders/1/websocket'
+      expect(response).to eq([403, {}, "You cannot listen to this order because it is completed (status > 1)"])
+    end
+
   end
 
   def send_request(method, path, params={})

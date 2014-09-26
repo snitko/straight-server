@@ -35,7 +35,17 @@ module StraightServer
     end
 
     def websocket
-      [200, {}, "websocket"]
+      order = Order[@params['id']]
+      if order
+        begin
+          @gateway.add_websocket_for_order ws = Faye::WebSocket.new(@env), order
+          ws
+        rescue Gateway::WebsocketExists
+          [403, {}, "Someone is already listening to that order"]
+        rescue Gateway::WebsocketForCompletedOrder
+          [403, {}, "You cannot listen to this order because it is completed (status > 1)"]
+        end
+      end
     end
 
     private
@@ -49,8 +59,8 @@ module StraightServer
 
         @response = if @request_path[3] # if an order id is supplied
           @params['id'] = @request_path[3].to_i
-          if @request_path[4] == 'ws'
-            order_websocket
+          if @request_path[4] == 'websocket'
+            websocket
           elsif @request_path[4].nil? && @method == 'GET'
             show
           end

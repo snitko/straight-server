@@ -32,9 +32,6 @@ RSpec.describe StraightServer::Gateway do
 
     before(:each) do
       @gateway = StraightServer::GatewayOnConfig.find_by_id(2) # Gateway 2 doesn't require signatures
-    end
-
-    before(:each) do
       @response_mock = double("http response mock")
       expect(@response_mock).to receive(:body).once.and_return('body')
       @order = create(:order)
@@ -135,6 +132,43 @@ RSpec.describe StraightServer::Gateway do
       expect(@gateway).to receive(:order_for_keychain_id).with(amount: 1, keychain_id: 2).once.and_return(@order_mock)
       @gateway.create_order(amount: 1, signature: hmac_sha1(1, 'secret'), id: 1)
       expect(DB[:gateways][:name => 'default'][:last_keychain_id]).to eq(2)
+    end
+
+  end
+
+  describe "handling websockets" do
+
+    before(:each) do
+      @gateway.instance_variable_set(:@websockets, {})
+      @ws = double("websocket mock")
+      allow(@ws).to receive(:on).with(:close)
+      allow(@order_mock).to receive(:id).and_return(1)
+      allow(@order_mock).to receive(:status).and_return(0)
+    end
+
+    it "adds a new websocket for the order" do
+      @gateway.add_websocket_for_order(@ws, @order_mock)
+      expect(@gateway.instance_variable_get(:@websockets)).to eq({ 1 => @ws})
+    end
+
+    it "sends a message to the websocket when status of the order is changed and closes the connection" do
+      allow(@gateway).to receive(:send_callback_http_request) # ignoring the callback which sends an callback_url request
+      expect(@order_mock).to receive(:to_json).and_return("order json info")
+      expect(@ws).to receive(:send).with("order json info")
+      expect(@ws).to receive(:close)
+      @gateway.add_websocket_for_order(@ws, @order_mock)
+      @gateway.order_status_changed(@order_mock)
+    end
+
+    it "doesn't allow to listen to orders with statuses other than 0 or 1" do
+      allow(@order_mock).to receive(:status).and_return(2)
+      expect( -> { @gateway.add_websocket_for_order(@ws, @order_mock) }).to raise_exception(StraightServer::Gateway::WebsocketForCompletedOrder)
+    end
+
+    it "doesn't allow to create a second websocket for the same order" do
+      allow(@order_mock).to receive(:status).and_return(0)
+      @gateway.add_websocket_for_order(@ws, @order_mock)
+      expect( -> { @gateway.add_websocket_for_order(@ws, @order_mock) }).to raise_exception(StraightServer::Gateway::WebsocketExists)
     end
 
   end
