@@ -1,6 +1,7 @@
 source "http://rubygems.org"
 
 gem "straight"
+gem "satoshi-unit"
 gem "goliath"
 gem "faye-websocket"
 gem "sequel"

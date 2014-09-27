@@ -25,7 +25,15 @@ module StraightServer
         end
       ]
 
-      @blockchain_adapters = [Straight::BlockchainInfoAdapter.mainnet_adapter, Straight::HelloblockIoAdapter.mainnet_adapter]
+      @blockchain_adapters = [
+        Straight::Blockchain::BlockchainInfoAdapter.mainnet_adapter,
+        Straight::Blockchain::HelloblockIoAdapter.mainnet_adapter
+      ]
+      @exchange_rate_adapters = [
+        Straight::ExchangeRate::BitpayAdapter.new,
+        Straight::ExchangeRate::CoinbaseAdapter.new,
+        Straight::ExchangeRate::BitstampAdapter.new
+      ]
       @status_check_schedule = Straight::GatewayModule::DEFAULT_STATUS_CHECK_SCHEDULE
       @websockets            = {}
 
@@ -39,7 +47,12 @@ module StraightServer
       signature = attrs.delete(:signature)
       raise InvalidOrderId if check_signature && (attrs[:id].nil? || attrs[:id].to_i <= 0)
       if !check_signature || sign_with_secret(attrs[:id]) == signature
-        order            = order_for_keychain_id(amount: attrs[:amount], keychain_id: increment_last_keychain_id!)
+        order = order_for_keychain_id(
+          amount:           attrs[:amount],
+          keychain_id:      increment_last_keychain_id!,
+          currency:         attrs[:currency],
+          btc_denomination: attrs[:btc_denomination]
+        )
         order.id         = attrs[:id].to_i if attrs[:id]
         order.data       = attrs[:data]    if attrs[:data]
         order.gateway    = self
@@ -201,6 +214,7 @@ module StraightServer
       gateway.secret                 = attrs['secret']
       gateway.check_signature        = attrs['check_signature']
       gateway.callback_url           = attrs['callback_url']
+      gateway.default_currency       = attrs['default_currency']
       gateway.name                   = name
       gateway.id                     = i
       gateway.load_last_keychain_id!

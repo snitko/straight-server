@@ -9,6 +9,7 @@ Sequel.migration do
       String  :order_class, null: false
       String  :secret,      null: false
       String  :name,        null: false
+      String  :default_currency, default: 'BTC'
       String  :callback_url
       Boolean :check_signature, null: false, default: false
       DateTime :created_at, null: false

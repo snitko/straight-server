@@ -6,19 +6,20 @@ RSpec.describe StraightServer::Gateway do
     @gateway = StraightServer::GatewayOnConfig.find_by_id(1)
     @order_mock = double("order mock")
     [:id, :gateway=, :save, :to_h, :id=].each { |m| allow(@order_mock).to receive(m) }
+    @order_for_keychain_id_args = { amount: 1, keychain_id: 1, currency: nil, btc_denomination: nil }
   end
 
   it "checks for signature when creating a new order" do
     @gateway.last_keychain_id = 0
     expect( -> { @gateway.create_order(amount: 1, signature: 'invalid', id: 1) }).to raise_exception(StraightServer::GatewayModule::InvalidSignature)
-    expect(@gateway).to receive(:order_for_keychain_id).with(amount: 1, keychain_id: 1).once.and_return(@order_mock)
+    expect(@gateway).to receive(:order_for_keychain_id).with(@order_for_keychain_id_args).once.and_return(@order_mock)
     @gateway.create_order(amount: 1, signature: hmac_sha1(1, 'secret'), id: 1)
   end
 
   it "checks md5 signature only if that setting is set ON for a particular gateway" do
     gateway1 = StraightServer::GatewayOnConfig.find_by_id(1)
     gateway2 = StraightServer::GatewayOnConfig.find_by_id(2)
-    expect(gateway2).to receive(:order_for_keychain_id).with(amount: 1, keychain_id: 1).once.and_return(@order_mock)
+    expect(gateway2).to receive(:order_for_keychain_id).with(@order_for_keychain_id_args).once.and_return(@order_mock)
     expect( -> { gateway1.create_order(amount: 1, signature: 'invalid') }).to raise_exception
     expect( -> { gateway2.create_order(amount: 1, signature: 'invalid') }).not_to raise_exception()
   end
@@ -26,6 +27,13 @@ RSpec.describe StraightServer::Gateway do
   it "doesn't allow nil or empty order id if signature checks are enabled" do
     expect( -> { @gateway.create_order(amount: 1, signature: 'invalid', id: nil) }).to raise_exception(StraightServer::GatewayModule::InvalidOrderId)
     expect( -> { @gateway.create_order(amount: 1, signature: 'invalid', id: '') }).to raise_exception(StraightServer::GatewayModule::InvalidOrderId)
+  end
+
+  it "sets order amount in satoshis calculated from another currency" do
+    @gateway = StraightServer::GatewayOnConfig.find_by_id(2)
+    allow(@gateway).to receive(:address_for_keychain_id).and_return('address')
+    allow(@gateway.exchange_rate_adapters.first).to receive(:rate_for).and_return(450.5412)
+    expect(@gateway.create_order(amount: 2252.706, currency: 'USD').amount).to eq(500000000)
   end
 
   context "callback url" do
@@ -63,7 +71,7 @@ RSpec.describe StraightServer::Gateway do
 
     it "receives random data in :data params and sends it back in a callback request" do
       @order.data = 'some random data'
-      expect(@gateway).to receive(:order_for_keychain_id).with(amount: 1, keychain_id: 1).once.and_return(@order)
+      expect(@gateway).to receive(:order_for_keychain_id).with(@order_for_keychain_id_args).once.and_return(@order)
       @gateway.create_order(amount: 1, data: 'some random data')
       expect(@response_mock).to receive(:code).twice.and_return("200")
       expect(Net::HTTP).to receive(:get_response).and_return(@response_mock)
@@ -104,7 +112,7 @@ RSpec.describe StraightServer::Gateway do
       @gateway.increment_last_keychain_id!
       expect(File.read("#{ENV['HOME']}/.straight/default_last_keychain_id").to_i).to eq(1)
 
-      expect(@gateway).to receive(:order_for_keychain_id).with(amount: 1, keychain_id: 2).once.and_return(@order_mock)
+      expect(@gateway).to receive(:order_for_keychain_id).with(@order_for_keychain_id_args.merge({ keychain_id: 2})).once.and_return(@order_mock)
       @gateway.create_order(amount: 1, signature: hmac_sha1(1, 'secret'), id: 1)
       expect(File.read("#{ENV['HOME']}/.straight/default_last_keychain_id").to_i).to eq(2)
     end
@@ -129,7 +137,7 @@ RSpec.describe StraightServer::Gateway do
       @gateway.increment_last_keychain_id!
       expect(DB[:gateways][:name => 'default'][:last_keychain_id]).to eq(1)
 
-      expect(@gateway).to receive(:order_for_keychain_id).with(amount: 1, keychain_id: 2).once.and_return(@order_mock)
+      expect(@gateway).to receive(:order_for_keychain_id).with(@order_for_keychain_id_args.merge({ keychain_id: 2})).once.and_return(@order_mock)
       @gateway.create_order(amount: 1, signature: hmac_sha1(1, 'secret'), id: 1)
       expect(DB[:gateways][:name => 'default'][:last_keychain_id]).to eq(2)
     end

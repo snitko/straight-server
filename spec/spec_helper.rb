@@ -56,6 +56,7 @@ RSpec.configure do |config|
   end
 
   config.before(:each) do
+    DB[:orders].delete
     logger_mock = double("logger mock")
     [:debug, :info, :warn, :fatal, :unknown, :blank_lines].each do |e|
       allow(logger_mock).to receive(e)
