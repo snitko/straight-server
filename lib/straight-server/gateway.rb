@@ -31,12 +31,11 @@ module StraightServer
       ]
 
       @exchange_rate_adapters = []
-      initialize_exchange_rate_adapters
-
       @status_check_schedule = Straight::GatewayModule::DEFAULT_STATUS_CHECK_SCHEDULE
       @websockets            = {}
 
       super
+      initialize_exchange_rate_adapters # should always go after super
     end
     
     # Creates a new order and saves into the DB. Checks if the MD5 hash
@@ -95,8 +94,8 @@ module StraightServer
     end
 
     def initialize_exchange_rate_adapters
-      if self.name
-        StraightServer::Config.gateways[self.name]['exchange_rate_adapters'].each do |adapter|
+      if self.exchange_rate_adapter_names
+        self.exchange_rate_adapter_names.each do |adapter|
           begin
             @exchange_rate_adapters << Kernel.const_get("Straight::ExchangeRate::#{adapter}Adapter").new
           rescue NameError 
@@ -153,9 +152,12 @@ module StraightServer
 
   # Uses database to load and save attributes
   class GatewayOnDB < Sequel::Model(:gateways)
+
     include Straight::GatewayModule
     include GatewayModule
     plugin :timestamps, create: :created_at, update: :updated_at
+    plugin :serialization, :marshal, :exchange_rate_adapter_names
+
   end
 
   # Uses a config file to load attributes and a special _last_keychain_id file
@@ -188,6 +190,8 @@ module StraightServer
     # This will be assigned the number that is the order in which this gateway follows in
     # the config file.
     attr_accessor :id
+
+    attr_accessor :exchange_rate_adapter_names
 
     # Because this is a config based gateway, we only save last_keychain_id
     # and nothing more.
@@ -228,6 +232,7 @@ module StraightServer
       gateway.default_currency       = attrs['default_currency']
       gateway.name                   = name
       gateway.id                     = i
+      gateway.exchange_rate_adapter_names = attrs['exchange_rate_adapters']
       gateway.initialize_exchange_rate_adapters
       gateway.load_last_keychain_id!
       @@gateways << gateway

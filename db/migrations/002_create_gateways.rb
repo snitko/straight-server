@@ -12,6 +12,7 @@ Sequel.migration do
       String  :default_currency, default: 'BTC'
       String  :callback_url
       Boolean :check_signature, null: false, default: false
+      String  :exchange_rate_adapter_names
       DateTime :created_at, null: false
       DateTime :updated_at
     end

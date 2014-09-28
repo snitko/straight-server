@@ -75,7 +75,7 @@ RSpec.describe StraightServer::Gateway do
       @gateway.create_order(amount: 1, data: 'some random data')
       expect(@response_mock).to receive(:code).twice.and_return("200")
       expect(Net::HTTP).to receive(:get_response).and_return(@response_mock)
-      expect(URI).to receive(:parse).with('http://localhost:3000/payment-callback?' + @order.to_http_params + "&data=#{@order.data}")
+      expect(URI).to receive(:parse).with('http://localhost:3001/payment-callback?' + @order.to_http_params + "&data=#{@order.data}")
       @gateway.order_status_changed(@order)
     end
 
@@ -128,7 +128,8 @@ RSpec.describe StraightServer::Gateway do
         order_class: 'StraightServer::Order',
         secret:      'secret',
         name:        'default',
-        check_signature: true
+        check_signature: true,
+        exchange_rate_adapter_names: ['Bitpay', 'Coinbase', 'Bitstamp']
       )
     end
     

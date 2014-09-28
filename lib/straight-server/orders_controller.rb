@@ -18,15 +18,21 @@ module StraightServer
           amount:           @params['amount'],
           currency:         @params['currency'],
           btc_denomination: @params['btc_denomination'],
-          id:               @params['order_id']
+          id:               @params['order_id'],
+          signature:        @params['signature']
         )
         StraightServer::Thread.new do
           order.start_periodic_status_check
         end
         [200, {}, order.to_json ]
       rescue Sequel::ValidationFailed => e
-        StraightServer.logger.warn "WARNING: validation errors in order, cannot create it."
+        StraightServer.logger.warn "validation errors in order, cannot create it."
         [409, {}, "Invalid order: #{e.message}" ]
+      rescue StraightServer::GatewayModule::InvalidSignature
+        [409, {}, "Invalid signature for id: #{@params['order_id']}" ]
+      rescue StraightServer::GatewayModule::InvalidOrderId
+        StraightServer.logger.warn message = "An invalid id for order supplied: #{@params['order_id']}"
+        [409, {}, message ]
       end
     end
 
