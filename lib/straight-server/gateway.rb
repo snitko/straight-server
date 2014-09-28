@@ -29,11 +29,10 @@ module StraightServer
         Straight::Blockchain::BlockchainInfoAdapter.mainnet_adapter,
         Straight::Blockchain::HelloblockIoAdapter.mainnet_adapter
       ]
-      @exchange_rate_adapters = [
-        Straight::ExchangeRate::BitpayAdapter.new,
-        Straight::ExchangeRate::CoinbaseAdapter.new,
-        Straight::ExchangeRate::BitstampAdapter.new
-      ]
+
+      @exchange_rate_adapters = []
+      initialize_exchange_rate_adapters
+
       @status_check_schedule = Straight::GatewayModule::DEFAULT_STATUS_CHECK_SCHEDULE
       @websockets            = {}
 
@@ -92,6 +91,18 @@ module StraightServer
       if ws = @websockets[order.id]
         ws.send(order.to_json)
         ws.close
+      end
+    end
+
+    def initialize_exchange_rate_adapters
+      if self.name
+        StraightServer::Config.gateways[self.name]['exchange_rate_adapters'].each do |adapter|
+          begin
+            @exchange_rate_adapters << Kernel.const_get("Straight::ExchangeRate::#{adapter}Adapter").new
+          rescue NameError 
+            raise NameError, "No such adapter exists: Straight::ExchangeRate::#{adapter}Adapter"
+          end
+        end
       end
     end
 
@@ -217,6 +228,7 @@ module StraightServer
       gateway.default_currency       = attrs['default_currency']
       gateway.name                   = name
       gateway.id                     = i
+      gateway.initialize_exchange_rate_adapters
       gateway.load_last_keychain_id!
       @@gateways << gateway
     end
