@@ -22,6 +22,8 @@ Straight uses BIP32 pubkeys so that you and only you control your private keys.
 If you're not sure what a BIP32 address and HD wallets are, read this article:
 http://bitcoinmagazine.com/8396/deterministic-wallets-advantages-flaw/
 
+You might also be interested in a stateless [Straight](https://github.com/snitko/straight) library that is the base for Straight server.
+
 Installation
 ------------
 I currently only tested it on Unix machines.
