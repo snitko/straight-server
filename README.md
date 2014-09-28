@@ -190,10 +190,11 @@ make sure that only one such request is allowed (that is, if signature was used,
 
 Querying the blockchain
 -----------------------
-Straight currently uses third-party servers, such as Blokchain.info and Helloblock.io to track
-addresesses and fetch transactions info. This means, you don't need to install bitcoind and store
-the whole blockchain on your server. In the future, I will add bitcoind support too for those
-who do not trust third-party services.
+Straight currently uses third-party services, such as Blokchain.info and Helloblock.io to track
+addresses and fetch transaction info. This means, you don't need to install bitcoind and store
+the whole blockchain on your server. If one service is down, it will automatically switch to another one. I will be adding more adapters in the future. It will also be possible to implement a cross check where if one service is lying about a transaction, I can check with another. In the future, I will add bitcoind support too for those who do not trust third-party services.
+
+To sum it up, there is nothing in the architecture of this software that says you should rely on third party services to query the blockchain.
 
 Running in production
 ---------------------
