@@ -188,6 +188,13 @@ and then send the request to the callback url with that signature:
 It is now up to your application to calculate that signature, compare it and
 make sure that only one such request is allowed (that is, if signature was used, it cannot be used again).
 
+Querying the blockchain
+-----------------------
+Straight currently uses third-party servers, such as Blokchain.info and Helloblock.io to track
+addresesses and fetch transactions info. This means, you don't need to install bitcoind and store
+the whole blockchain on your server. In the future, I will add bitcoind support too for those
+who do not trust third-party services.
+
 Running in production
 ---------------------
 Running in production usually assumes running server as daemon with a pid. Straight server
