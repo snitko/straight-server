@@ -7,6 +7,7 @@ module StraightServer
 
     def initialize
       prepare
+      StraightServer.logger.info "Starting Straight server v #{StraightServer::VERSION}"
       require_relative 'order'
       require_relative 'gateway'
       require_relative 'orders_controller'

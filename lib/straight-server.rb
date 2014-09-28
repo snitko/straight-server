@@ -16,6 +16,8 @@ require_relative 'straight-server/orders_controller'
 
 module StraightServer
 
+  VERSION = '0.1.0'
+
   class << self
     attr_accessor :db_connection, :logger
   end

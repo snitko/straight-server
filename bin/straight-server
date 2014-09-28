@@ -1,5 +1,6 @@
 #!/usr/bin/env ruby
 
 require 'goliath'
+
 require_relative '../lib/straight-server'
 require_relative '../lib/straight-server/server'

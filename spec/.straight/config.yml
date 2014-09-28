@@ -12,6 +12,10 @@ gateways:
     check_signature: true
     callback_url: 'http://localhost:3000/payment-callback'
     default_currency: 'BTC'
+    exchange_rate_adapters:
+      - Bitpay
+      - Coinbase
+      - Bitstamp
   second_gateway:
     pubkey: 'xpub-001'
     confirmations_required: 0
@@ -20,6 +24,10 @@ gateways:
     check_signature: false
     callback_url: 'http://localhost:3001/payment-callback'
     default_currency: 'BTC'
+    exchange_rate_adapters:
+      - Bitpay
+      - Coinbase
+      - Bitstamp
 
 db:
   adapter: sqlite
