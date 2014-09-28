@@ -208,9 +208,7 @@ Ruby 2.1 or later.
 
 Donations
 ---------
-To go on with this project and make it truly awesome, I need more time. I can only buy free time with money, so any donation is highly appreciated. Please send bitcoins over to 1D3PknG4Lw1gFuJ9SYenA7pboF9gtXtdcD
-
-![1D3PknG4Lw1gFuJ9SYenA7pboF9gtXtdcD](https://blockchain.info/qr?data=1D3PknG4Lw1gFuJ9SYenA7pboF9gtXtdcD&size=200)
+To go on with this project and make it truly awesome, I need more time. I can only buy free time with money, so any donation is highly appreciated. Please send bitcoins over to **1D3PknG4Lw1gFuJ9SYenA7pboF9gtXtdcD**
 
 There are [development plans](http://straight.romansnitko.com/#todo) for this software you might be interested in.
 
