@@ -24,7 +24,7 @@ create_order() {
 }
 
 listen_to_order(order) {
-  var ws = new WebSocket("ws://localhost:9000/gateways/1/orders/${order['id']}/websocket");
+  var ws = new WebSocket("ws://localhost:9696/gateways/1/orders/${order['id']}/websocket");
   ws.onMessage.listen((MessageEvent e) {
     var order = JSON.decode(e.data);
     if(order['status'] > 1) show_order_paid(order);

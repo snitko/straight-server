@@ -17,7 +17,8 @@ module StraightServer
         order = @gateway.create_order(
           amount:           @params['amount'],
           currency:         @params['currency'],
-          btc_denomination: @params['btc_denomination']
+          btc_denomination: @params['btc_denomination'],
+          id:               @params['order_id']
         )
         StraightServer::Thread.new do
           order.start_periodic_status_check

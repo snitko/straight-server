@@ -26,7 +26,8 @@ logmaster:
   name: Straight server logger
 
   # These options bellow send you email whenever a FATAL error occurs.
-  # You probably want to uncomment them for production.
+  # You probably want to uncomment them for production. See https://github.com/snitko/logmaste
+  # for various email options.
   #
   #email_config:
     #to: 'me@email.foo',
