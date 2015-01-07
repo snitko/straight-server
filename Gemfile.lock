@@ -66,9 +66,9 @@ GEM
     log4r (1.1.10)
     logmaster (0.1.1)
       pony
-    mail (2.6.1)
+    mail (2.6.3)
       mime-types (>= 1.16, < 3)
-    mime-types (2.3)
+    mime-types (2.4.3)
     mini_portile (0.6.0)
     minitest (5.4.1)
     money-tree (0.8.7)
