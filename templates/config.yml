@@ -30,7 +30,7 @@ logmaster:
   # for various email options.
   #
   #email_config:
-    #to: 'me@email.foo',
+    #to: 'me@email.foo'
     #from: "logmaster@yourapp.com"
 
 db:
