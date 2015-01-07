@@ -64,7 +64,7 @@ GEM
     json (1.8.1)
     jwt (1.0.0)
     log4r (1.1.10)
-    logmaster (0.1.1)
+    logmaster (0.1.2)
       pony
     mail (2.6.3)
       mime-types (>= 1.16, < 3)
@@ -129,7 +129,7 @@ DEPENDENCIES
   goliath
   hashie
   jeweler (~> 2.0.1)
-  logmaster
+  logmaster (= 0.1.2)
   rspec
   ruby-hmac
   satoshi-unit

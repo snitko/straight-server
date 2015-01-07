@@ -5,7 +5,7 @@ gem "satoshi-unit"
 gem "goliath"
 gem "faye-websocket"
 gem "sequel"
-gem "logmaster"
+gem "logmaster", '0.1.2'
 gem "ruby-hmac"
 
 # Add dependencies to develop your gem here.
