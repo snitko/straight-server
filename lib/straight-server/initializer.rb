@@ -6,23 +6,40 @@ module StraightServer
     STRAIGHT_CONFIG_PATH = ENV['HOME'] + '/.straight'
 
     def prepare
-      create_config_file unless File.exist?(STRAIGHT_CONFIG_PATH + '/config.yml')
+      create_config_files
       read_config_file
       create_logger
       connect_to_db
       run_migrations if migrations_pending?
+      initialize_routes
+      load_addons
+    end
+
+    def add_route(path, &block)
+      @routes[path] = block 
     end
 
     private
 
-      def create_config_file
-        puts "\e[1;33mWARNING!\e[0m \e[33mNo file ~/.straight/config was found. Created a sample one for you.\e[0m"
-        puts "You should edit it and try starting the server again.\n"
+      def create_config_files
 
         FileUtils.mkdir_p(STRAIGHT_CONFIG_PATH) unless File.exist?(STRAIGHT_CONFIG_PATH)
-        FileUtils.cp(GEM_ROOT + '/templates/config.yml', ENV['HOME'] + '/.straight/') 
-        puts "Shutting down now.\n\n"
-        exit
+
+        unless File.exist?(STRAIGHT_CONFIG_PATH + '/addons.yml')
+          puts "\e[1;33mNOTICE!\e[0m \e[33mNo file ~/.straight/addons.yml was found. Created an empty sample for you.\e[0m"
+          puts "No need to restart until you actually list your addons there. Now will continue loading StraightServer."
+          FileUtils.cp(GEM_ROOT + '/templates/addons.yml', ENV['HOME'] + '/.straight/') 
+        end
+
+        unless File.exist?(STRAIGHT_CONFIG_PATH + '/config.yml')
+          puts "\e[1;33mWARNING!\e[0m \e[33mNo file ~/.straight/config was found. Created a sample one for you.\e[0m"
+          puts "You should edit it and try starting the server again.\n"
+
+          FileUtils.cp(GEM_ROOT + '/templates/config.yml', ENV['HOME'] + '/.straight/') 
+          puts "Shutting down now.\n\n"
+          exit
+        end
+
       end
 
       def read_config_file
@@ -71,6 +88,38 @@ module StraightServer
           name:            Config.logmaster['name'],
           email_config:    Config.logmaster['email_config']
         )
+      end
+
+      def initialize_routes
+        @routes = {}
+        add_route /\A\/gateways\/.+?\/orders(\/.+)?\Z/ do |env|
+          controller = OrdersController.new(env)
+          controller.response
+        end
+      end
+
+      # Loads addon modules into StraightServer::Server. To be useful,
+      # an addon most probably has to implement self.extended(server) callback.
+      # That way, it can access the server object and, for example, add routes
+      # with StraightServer::Server#add_route.
+      #
+      # Addon modules can be both rubygems or files under ~/.straight/addons/.
+      # If ~/.straight/addons.yml contains a 'path' key for a particular addon, then it means
+      # the addon is placed under the ~/.straight/addons/. If not, it is assumed it
+      # is already in the LOAD_PATH somehow, with rubygems for example.
+      def load_addons
+        # load ~/.straight/addons.yml
+        addons = YAML.load_file(STRAIGHT_CONFIG_PATH + '/addons.yml')
+        addons.each do |name, addon|
+          StraightServer.logger.info "Loading #{name} addon"
+          if addon['path'] # First, check the ~/.straight/addons dir
+            require STRAIGHT_CONFIG_PATH + '/' + addon['path']
+          else # then assume it's already loaded using rubygems
+            require name
+          end
+          # extending the current server object with the addon
+          extend Kernel.const_get("StraightServer::Addon::#{addon['module']}")
+        end if addons
       end
 
   end

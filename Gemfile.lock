@@ -27,7 +27,7 @@ GEM
     faye-websocket (0.7.4)
       eventmachine (>= 0.12.0)
       websocket-driver (>= 0.3.1)
-    ffi (1.9.3)
+    ffi (1.9.6)
     git (1.2.8)
     github_api (0.11.3)
       addressable (~> 2.3)
@@ -71,7 +71,7 @@ GEM
     mime-types (2.4.3)
     mini_portile (0.6.0)
     minitest (5.4.1)
-    money-tree (0.8.7)
+    money-tree (0.8.8)
       ffi
     multi_json (1.10.1)
     multi_xml (0.5.5)

@@ -16,7 +16,7 @@ require_relative 'straight-server/orders_controller'
 
 module StraightServer
 
-  VERSION = '0.1.0'
+  VERSION = '0.1.0' # TODO: move this to a separate VERSION file which is updated automatically
 
   class << self
     attr_accessor :db_connection, :logger

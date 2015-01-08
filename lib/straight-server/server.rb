@@ -34,12 +34,11 @@ module StraightServer
           end
         end
 
-        if env['REQUEST_PATH'] =~ /\A\/gateways\/.+?\/orders(\/.+)?\Z/
-          controller = OrdersController.new(env)
-          return controller.response
-        else
-          return [404, {}, "#{env['REQUEST_METHOD']} #{env['REQUEST_PATH']} Not found"]
+        @routes.each do |path, action| # path is a regexp
+          return action.call(env) if env['REQUEST_PATH'] =~ path
         end
+        # no block was called, means no route matched. Let's render 404
+        return [404, {}, "#{env['REQUEST_METHOD']} #{env['REQUEST_PATH']} Not found"]
 
       end
 
