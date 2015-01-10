@@ -81,6 +81,10 @@ RSpec.describe StraightServer::Order do
         expect( -> { create(:order, gateway_id: 0) }).to raise_error()
       end
 
+      it "doesn't save order if description is too long" do
+        expect( -> { create(:order, description: ("text" * 100)) }).to raise_error()
+      end
+
     end
 
   end
