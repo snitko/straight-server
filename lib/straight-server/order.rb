@@ -39,6 +39,7 @@ module StraightServer
       super # calling Sequel::Model validator
       errors.add(:amount,     "is invalid") if !amount.kind_of?(Numeric)     || amount <= 0
       errors.add(:gateway_id, "is invalid") if !gateway_id.kind_of?(Numeric) || gateway_id <= 0
+      errors.add(:gateway_id, "should be shorter than 255 charachters") if !description.kind_of?(String) && description <= 0
       validates_unique   :id, :address, [:keychain_id, :gateway_id]
       validates_presence [:address, :keychain_id, :gateway_id, :amount]
     end
