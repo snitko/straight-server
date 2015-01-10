@@ -11,6 +11,7 @@ module StraightServer
       require_relative 'order'
       require_relative 'gateway'
       require_relative 'orders_controller'
+      load_addons
       super
     end
 

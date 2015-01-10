@@ -12,7 +12,6 @@ module StraightServer
       connect_to_db
       run_migrations if migrations_pending?
       initialize_routes
-      load_addons
     end
 
     def add_route(path, &block)

@@ -8,6 +8,11 @@ main() {
   create_order_button.onClick.listen((e) =>
     create_order().listen((event) {
       var order = JSON.decode(event.target.responseText);
+
+      // Showing full order info that the server has returned us
+      // in the console.
+      print(order);
+
       show_pay_order(order);
       listen_to_order(order);
     })
