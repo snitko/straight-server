@@ -105,17 +105,17 @@ module StraightServer
       end
     end
 
-    private
-
-      def sign_with_secret(content, level: 1)
-        result = content.to_s
-        level.times do
-          h = HMAC::SHA1.new(secret)
-          h << result
-          result = h.hexdigest
-        end
-        result
+    def sign_with_secret(content, level: 1)
+      result = content.to_s
+      level.times do
+        h = HMAC::SHA1.new(secret)
+        h << result
+        result = h.hexdigest
       end
+      result
+    end
+
+    private
 
       # Tries to send a callback HTTP request to the resource specified
       # in the #callback_url. If it fails for any reason, it keeps trying for an hour (3600 seconds)
