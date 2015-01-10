@@ -55,6 +55,12 @@ RSpec.describe StraightServer::Order do
 
     end
 
+    it "returns amount in btc as a string" do
+      @order.amount = 1
+      expect(@order.amount_in_btc).to eq(0.00000001) 
+      expect(@order.amount_in_btc(as: :string)).to eq('0.00000001') 
+    end
+
     describe "with validations" do
 
       it "doesn't save order if the order with the same id exists" do
