@@ -28,7 +28,7 @@ module StraightServer
     end
 
     def to_h
-      super.merge({ id: id })
+      super.merge({ id: id, payment_id: payment_id })
     end
 
     def to_json
@@ -54,6 +54,11 @@ module StraightServer
 
     def check_status_on_schedule(period: 10, iteration_index: 0)
       StraightServer.logger.info "Checking status of order #{self.id}"
+      super
+    end
+
+    def before_create
+      self.payment_id = gateway.sign_with_secret("#{id}#{amount}#{created_at}")
       super
     end
 

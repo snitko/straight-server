@@ -10,12 +10,17 @@ RSpec.describe StraightServer::Order do
     @order = create(:order, gateway_id: @gateway.id)
     allow(@gateway).to receive(:fetch_transactions_for).with(anything).and_return([])
     allow(@gateway).to receive(:order_status_changed).with(anything)
+    allow(@gateway).to receive(:sign_with_secret).with(anything).and_return("1", "2", "3")
     allow(StraightServer::Gateway).to receive(:find_by_id).and_return(@gateway)
   end
 
   it "prepares data as http params" do
     allow(@order).to receive(:tid).and_return("tid1")
     expect(@order.to_http_params).to eq("order_id=#{@order.id}&amount=10&status=#{@order.status}&address=#{@order.address}&tid=tid1")
+  end
+
+  it "generates a payment_id" do
+    expect(@order.payment_id).to eq(@order.gateway.sign_with_secret("#{@order.id}#{@order.amount}#{@order.created_at}"))
   end
 
   describe "DB interaction" do
@@ -25,6 +30,7 @@ RSpec.describe StraightServer::Order do
     end
 
     it "updates an existing order" do
+      allow(@order).to receive(:gateway).and_return(@gateway)
       expect(DB[:orders][:keychain_id => @order.id][:status]).to eq(0) 
       @order.status = 1
       @order.save
