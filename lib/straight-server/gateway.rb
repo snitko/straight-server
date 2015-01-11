@@ -4,6 +4,10 @@ module StraightServer
   # in one of the classes below.
   module GatewayModule
 
+    def fetch_transactions_for(address)
+      try_adapters(@blockchain_adapters) { |b| b.fetch_transactions_for(address) }
+    end
+
     class InvalidSignature           < Exception; end
     class InvalidOrderId             < Exception; end
     class CallbackUrlBadResponse     < Exception; end
@@ -16,7 +20,7 @@ module StraightServer
       
       # When the status of an order changes, we send an http request to the callback_url
       # and also notify a websocket client (if present, of course).
-      @order_callbacks     = [
+      @order_callbacks = [
         lambda do |order|
           StraightServer::Thread.new do
             send_callback_http_request     order
@@ -31,8 +35,8 @@ module StraightServer
       ]
 
       @exchange_rate_adapters = []
-      @status_check_schedule = Straight::GatewayModule::DEFAULT_STATUS_CHECK_SCHEDULE
-      @websockets            = {}
+      @status_check_schedule  = Straight::GatewayModule::DEFAULT_STATUS_CHECK_SCHEDULE
+      @websockets             = {}
 
       super
       initialize_exchange_rate_adapters # should always go after super
