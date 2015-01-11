@@ -37,7 +37,7 @@ module StraightServer
     end
 
     def show
-      order = Order[@params['id']]
+      order = Order[@params['id']] || (@params['id'] =~ /[^\d]+/ && Order[:payment_id => @params['id']])
       if order
         order.status(reload: true)
         order.save if order.status_changed?
@@ -69,7 +69,8 @@ module StraightServer
         @gateway = StraightServer::Gateway.find_by_id(@request_path[1])
 
         @response = if @request_path[3] # if an order id is supplied
-          @params['id'] = @request_path[3].to_i
+          @params['id'] = @request_path[3]
+          @params['id'] = @params['id'].to_i if @params['id'] =~ /\A\d+\Z/
           if @request_path[4] == 'websocket'
             websocket
           elsif @request_path[4].nil? && @method == 'GET'
