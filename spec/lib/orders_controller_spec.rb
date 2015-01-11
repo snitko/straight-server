@@ -107,6 +107,14 @@ RSpec.describe StraightServer::OrdersController do
       expect(response).to eq([403, {}, "You cannot listen to this order because it is completed (status > 1)"])
     end
 
+    it "finds order by payment_id" do
+      allow(@order_mock).to receive(:status).and_return(0)
+      expect(StraightServer::Order).to receive(:[]).with('payment_id').and_return(nil)
+      expect(StraightServer::Order).to receive(:[]).with(:payment_id => 'payment_id').and_return(@order_mock)
+      send_request "GET", '/gateways/2/orders/payment_id/websocket'
+      expect(response).to eq("ws rack response")
+    end
+
   end
 
   def send_request(method, path, params={})
