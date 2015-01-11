@@ -30,8 +30,8 @@ module StraightServer
         if Goliath.env == :development
           if env['REQUEST_PATH'] == '/'
             return [200, {}, IO.read(Initializer::GEM_ROOT + '/examples/client/client.html')]
-          elsif Goliath.env == :development && env['REQUEST_PATH'] == '/client.dart'
-            return [200, {}, IO.read(Initializer::GEM_ROOT + '/examples/client/client.dart')]
+          elsif Goliath.env == :development && env['REQUEST_PATH'] == '/client.js'
+            return [200, {}, IO.read(Initializer::GEM_ROOT + '/examples/client/client.js')]
           end
         end
 

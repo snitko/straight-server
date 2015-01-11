@@ -2,29 +2,19 @@
 
   <head>
     <title>A Straight client example</title>
-    <script type="application/dart" src="client.dart"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
+    <script src="client.js"></script>
   </head>
 
   <body>
 
-      <p><b style="color: red; font-size: 80%;">Attention: this page requires <a href="https://www.dartlang.org/tools/dartium/">Dartium</a> to run properly.</b></p>
-
     <div id="newOrder">
-      <p>Welcome to the Straight client example. It assumes you have your Straight server running on localhost on the standart Straight port and this page is loaded by accessing the / (root) on that server: that is, check that in your browser address you currently see http://localhost:9696. Loding this page from the filesystem won't work since ajax-requests cannot be sent to other domains.</p>
+      <p>Welcome to the Straight client example. Loading this page from the filesystem won't work since ajax-requests cannot be sent to other domains.</p>
       
-      <p>Clicking the button below will generate a new address for the order and will subscribe you to the websocket, which will automatically notify you when the money arrive to the address. You don't have to refresh this page.</p>
+      <p>Clicking the button below will generate a new address for the order for 1 Satoshi and will subscribe you to the websocket, which will automatically notify you when the money arrive to the address. You don't have to refresh this page.</p>
 
       <p>Use this button to generate a new order:</p>
       <p><button id="create_order">Create Order</button></p>
-    </div>
-
-    <div id="payOrder" style="display: none;">
-      Order <span class="orderId"></span> created. Please send exactly <b><span class="orderAmount"></span> satoshi(s)</b> to address <span class="orderAddress" style="font-weight: bold;"></span>. This page will be updated as soon as the transaction is made.
-    </div>
-
-    <div id="orderPaid" style="display: none;">
-      The status of your order is now <span class="orderStatus"></span><br/>
-      Transaction id is: <span class="orderTid"></span>
     </div>
 
   </body>
