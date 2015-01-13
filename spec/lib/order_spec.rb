@@ -24,11 +24,11 @@ RSpec.describe StraightServer::Order do
   end
 
   it "starts a periodic status check but subtracts the time passed from order creation from the duration of the check" do
-    expect(@order).to receive(:check_status_on_schedule).with(duration: 600)
+    expect(@order).to receive(:check_status_on_schedule).with(duration: 900)
     @order.start_periodic_status_check
 
     @order.created_at = (Time.now - 100)
-    expect(@order).to receive(:check_status_on_schedule).with(duration: 500)
+    expect(@order).to receive(:check_status_on_schedule).with(duration: 800)
     @order.start_periodic_status_check
   end
 

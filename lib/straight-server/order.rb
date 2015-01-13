@@ -67,11 +67,15 @@ module StraightServer
     # Order#created_at into account now, so that we don't start checking on
     # an order that is already expired. Or, if it's not expired yet,
     # we make sure to stop all checks as soon as it expires, but not later.
-    def start_periodic_status_check(duration: 600)
-      time_passed = (Time.now - created_at).to_i
-      if duration-time_passed > 0
-        check_status_on_schedule(duration: duration-time_passed)
+    def start_periodic_status_check(duration: @gateway.orders_expiration_period)
+      if (t = time_left_before_expiration) > 0
+        check_status_on_schedule(duration: t)
       end
+    end
+
+    def time_left_before_expiration(duration: @gateway.orders_expiration_period)
+      time_passed_after_creation = (Time.now - created_at).to_i
+      @gateway.orders_expiration_period-time_passed_after_creation
     end
 
   end
