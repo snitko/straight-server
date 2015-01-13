@@ -11,6 +11,7 @@ gateways:
     check_signature: false
     callback_url: 'http://localhost:3000/my_app/payment_callback'
     default_currency: 'BTC'
+    orders_expiration_period: 600 # seconds
 
     # The order matters here, we check for prices with the first adapter,
     # if it fails, move on to the next

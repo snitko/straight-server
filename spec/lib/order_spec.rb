@@ -23,6 +23,15 @@ RSpec.describe StraightServer::Order do
     expect(@order.payment_id).to eq(@order.gateway.sign_with_secret("#{@order.id}#{@order.amount}#{@order.created_at}"))
   end
 
+  it "starts a periodic status check but subtracts the time passed from order creation from the duration of the check" do
+    expect(@order).to receive(:check_status_on_schedule).with(duration: 600)
+    @order.start_periodic_status_check
+
+    @order.created_at = (Time.now - 100)
+    expect(@order).to receive(:check_status_on_schedule).with(duration: 500)
+    @order.start_periodic_status_check
+  end
+
   describe "DB interaction" do
 
     it "saves a new order into the database" do
