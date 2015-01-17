@@ -3,7 +3,7 @@ Straight server
 > A stand-alone Bitcoin payment gateway server
 > Receives bitcoin payments directly into your wallet, holds no private keys
 
-> Website: http://straight.romansnitko.com
+> Website: http://straight.mycelium.com
 
 If you'd like to accept Bitcoin payments on your website automatically, but you're not
 fond of services like Coinbase or Bitpay, which hold your bitcoins for you and require a ton
@@ -94,6 +94,22 @@ You can also subscribe to the order status changes using websockets at:
     /gateways/1/orders/1/websocket
 
 It will send a message to the client upon the status change and close connection afterwards.
+
+**Order expiration**
+means that after a certain time has passed, it is no longer possible to pay for it. Each order holds
+its creation time in `#created_at` field. In turn, each order's gateway has a field called
+`#orders_expiration_period` (you can set it as an option in config file for each particular gateway or in the DB,
+depending on what approach to storing gateways you use). After this time has passed, straight-server stops
+checking whether new transactions appear on the order's bitcoin address and also changes order's status to 5 (expired).
+
+Implications of restarting the server
+-------------------------------------
+
+If you shut the server down and the start it again, all unresolved orders (status < 2 and non-expired)
+are automatically picked up and the server starts checking on them again until they expire. Please note
+that you'd need to make sure you client side reconnects to the order's websocket again. This is because
+on server shutdown, all websocket connections are closed, therefore, there's no way to automatically restore them.
+It is thus client's responsibility to check when websocket is closed, then periodically try to connect to it again.
 
 Client Example
 --------------
@@ -219,8 +235,6 @@ Ruby 2.1 or later.
 Donations
 ---------
 To go on with this project and make it truly awesome, I need more time. I can only buy free time with money, so any donation is highly appreciated. Please send bitcoins over to **1D3PknG4Lw1gFuJ9SYenA7pboF9gtXtdcD**
-
-There are [development plans](http://straight.romansnitko.com/#todo) for this software you might be interested in.
 
 Credits
 -------
