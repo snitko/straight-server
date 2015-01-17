@@ -12,6 +12,7 @@ module StraightServer
       require_relative 'gateway'
       require_relative 'orders_controller'
       load_addons
+      resume_tracking_active_orders!
       super
     end
 

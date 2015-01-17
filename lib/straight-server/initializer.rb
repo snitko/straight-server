@@ -121,6 +121,19 @@ module StraightServer
         end if addons
       end
 
+      # Finds orders that have statuses < 2 and starts querying the blockchain
+      # for them (unless they are also expired). This is for cases when the server was shut down,
+      # but some orders statuses are not resolved.
+      def resume_tracking_active_orders!
+        StraightServer::Order.where('status < 2').each do |order|
+          next if order.time_left_before_expiration < 1
+          StraightServer.logger.info "Resuming tracking of order #{order.id}, current status is #{order.status}, time before expiration: #{order.time_left_before_expiration} seconds."
+          StraightServer::Thread.new do
+            order.start_periodic_status_check
+          end
+        end
+      end
+
   end
 
 end
