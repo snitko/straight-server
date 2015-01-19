@@ -105,9 +105,9 @@ checking whether new transactions appear on the order's bitcoin address and also
 Implications of restarting the server
 -------------------------------------
 
-If you shut the server down and the start it again, all unresolved orders (status < 2 and non-expired)
+If you shut the server down and then start it again, all unresolved orders (status < 2 and non-expired)
 are automatically picked up and the server starts checking on them again until they expire. Please note
-that you'd need to make sure you client side reconnects to the order's websocket again. This is because
+that you'd need to make sure your client side reconnects to the order's websocket again. This is because
 on server shutdown, all websocket connections are closed, therefore, there's no way to automatically restore them.
 It is thus client's responsibility to check when websocket is closed, then periodically try to connect to it again.
 
@@ -168,7 +168,7 @@ Go to your `~/.straight/config.yml` directory and set two options for each of yo
     check_signature: true
 
 This will force gateways to check signatures when you try to create a new order. A signature is
-a HMAC SHA1 hash of the secret and an order id. Because you need order id, it means you have
+a HMAC SHA256 hash of the secret and an order id. Because you need order id, it means you have
 to actually provide it manually in the params. It can be any integer > 0, but it's better
 that it is a consecutive integer, so keep track of order ids in your application. Obviously,
 if an order with such an id already exists, the request will be rejected. A possible request
@@ -178,24 +178,18 @@ if an order with such an id already exists, the request will be rejected. A poss
 
 An example of obtaining such signature in Ruby:
 
-    require 'hmac'
-    require 'hmac-sha1'
+    require 'openssl'
     
     secret = 'a long string of random chars'
-    h = HMAC::SHA1.new(secret)
-    h << '1' # order id
-    h.hexdigest
+    OpenSSL::HMAC.digest('sha256', secret, "1").unpack("H*").first # "1" may be order_id here
 
 Straight server will also sign the callback url request. However, since the signature may be
 known to an attacker once it was used for creating a new order, we can no longer use it directly.
 Thus, Straight server will use a double signature calculated like this:
 
     secret = 'a long string of random chars'
-    h = HMAC::SHA1.new(secret)
-    h << '1' # order id
-    h2 = HMAC::SHA1.new(secret)
-    h2 << h.hexdigest
-    h2.hexdigest
+    h1 = OpenSSL::HMAC.digest('sha256', secret, "1").unpack("H*").first
+    h2 = OpenSSL::HMAC.digest('sha256', secret, h1).unpack("H*").first
 
 and then send the request to the callback url with that signature:
 

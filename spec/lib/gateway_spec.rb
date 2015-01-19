@@ -13,7 +13,7 @@ RSpec.describe StraightServer::Gateway do
     @gateway.last_keychain_id = 0
     expect( -> { @gateway.create_order(amount: 1, signature: 'invalid', id: 1) }).to raise_exception(StraightServer::GatewayModule::InvalidSignature)
     expect(@gateway).to receive(:order_for_keychain_id).with(@order_for_keychain_id_args).once.and_return(@order_mock)
-    @gateway.create_order(amount: 1, signature: hmac_sha1(1, 'secret'), id: 1)
+    @gateway.create_order(amount: 1, signature: hmac_sha256(1, 'secret'), id: 1)
   end
 
   it "checks md5 signature only if that setting is set ON for a particular gateway" do
@@ -64,7 +64,7 @@ RSpec.describe StraightServer::Gateway do
     it "signs the callback if gateway has a secret" do
       @gateway = StraightServer::GatewayOnConfig.find_by_id(1) # Gateway 1 requires signatures
       expect(@response_mock).to receive(:code).twice.and_return("200")
-      expect(URI).to receive(:parse).with('http://localhost:3000/payment-callback?' + @order.to_http_params + "&signature=#{hmac_sha1(hmac_sha1(@order.id, 'secret'), 'secret')}")
+      expect(URI).to receive(:parse).with('http://localhost:3000/payment-callback?' + @order.to_http_params + "&signature=#{hmac_sha256(hmac_sha256(@order.id, 'secret'), 'secret')}")
       expect(Net::HTTP).to receive(:get_response).and_return(@response_mock)
       @gateway.order_status_changed(@order)
     end
@@ -113,7 +113,7 @@ RSpec.describe StraightServer::Gateway do
       expect(File.read("#{ENV['HOME']}/.straight/default_last_keychain_id").to_i).to eq(1)
 
       expect(@gateway).to receive(:order_for_keychain_id).with(@order_for_keychain_id_args.merge({ keychain_id: 2})).once.and_return(@order_mock)
-      @gateway.create_order(amount: 1, signature: hmac_sha1(1, 'secret'), id: 1)
+      @gateway.create_order(amount: 1, signature: hmac_sha256(1, 'secret'), id: 1)
       expect(File.read("#{ENV['HOME']}/.straight/default_last_keychain_id").to_i).to eq(2)
     end
 
@@ -139,7 +139,7 @@ RSpec.describe StraightServer::Gateway do
       expect(DB[:gateways][:name => 'default'][:last_keychain_id]).to eq(1)
 
       expect(@gateway).to receive(:order_for_keychain_id).with(@order_for_keychain_id_args.merge({ keychain_id: 2})).once.and_return(@order_mock)
-      @gateway.create_order(amount: 1, signature: hmac_sha1(1, 'secret'), id: 1)
+      @gateway.create_order(amount: 1, signature: hmac_sha256(1, 'secret'), id: 1)
       expect(DB[:gateways][:name => 'default'][:last_keychain_id]).to eq(2)
     end
 
@@ -182,10 +182,8 @@ RSpec.describe StraightServer::Gateway do
 
   end
 
-  def hmac_sha1(key, secret)
-    h = HMAC::SHA1.new('secret')
-    h << key.to_s
-    h.hexdigest
+  def hmac_sha256(key, secret)
+    OpenSSL::HMAC.digest('sha256', secret, key.to_s).unpack("H*").first
   end
 
 end
