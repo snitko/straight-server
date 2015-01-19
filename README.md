@@ -174,7 +174,7 @@ that it is a consecutive integer, so keep track of order ids in your application
 if an order with such an id already exists, the request will be rejected. A possible request
 (assuming secret is the line mentioned above in the sample config) would look like this:
 
-    POST /gateways/1/orders?amount=1&order_id=1&signature=fb0e8d863621a3e6e2bf4e81f8ab70737190d92b
+    POST /gateways/1/orders?amount=1&order_id=1&signature=aa14c26b2ae892a8719b0c2c57f162b967bfbfbdcc38d8883714a0680cf20467
 
 An example of obtaining such signature in Ruby:
 
@@ -193,7 +193,7 @@ Thus, Straight server will use a double signature calculated like this:
 
 and then send the request to the callback url with that signature:
 
-    GET http://mystore.com/payment-callback?order_id=1&amount=1&status=2&address=1NZov2nm6gRCGW6r4q1qHtxXurrWNpPr1q&tid=tid1&data=some+random+data?signature=a61381c87ea3f7e6958ef779b6a9789ec966c2b9
+    GET http://mystore.com/payment-callback?order_id=1&amount=1&status=2&address=1NZov2nm6gRCGW6r4q1qHtxXurrWNpPr1q&tid=tid1&data=some+random+data?signature=aa14c26b2ae892a8719b0c2c57f162b967bfbfbdcc38d8883714a0680cf20467
 
 It is now up to your application to calculate that signature, compare it and
 make sure that only one such request is allowed (that is, if signature was used, it cannot be used again).
