@@ -126,10 +126,27 @@ module StraightServer
       # but some orders statuses are not resolved.
       def resume_tracking_active_orders!
         StraightServer::Order.where('status < 2').each do |order|
-          next if order.time_left_before_expiration < 1
-          StraightServer.logger.info "Resuming tracking of order #{order.id}, current status is #{order.status}, time before expiration: #{order.time_left_before_expiration} seconds."
-          StraightServer::Thread.new do
-            order.start_periodic_status_check
+
+          # Order is expired, but status is < 2! Suspcicious, probably
+          # an unclean shutdown of the server. Let's check and update the status manually once.
+          if order.time_left_before_expiration < 1
+            StraightServer.logger.info "Order #{order.id} seems to be expired, but status remains #{order.status}. Will check for status update manually."
+            StraightServer::Thread.new do
+              order.status(reload: true)
+
+              # if we still see no transactions to that address,
+              # consider the order truy expired and update the status accordingly
+              order.status = StraightServer::Order::STATUSES[:expired] if order.status < 2
+
+              order.save
+              StraightServer.logger.info "Order #{order.id} status updated, new status is #{order.status}"
+            end
+          # Order is NOT expired and status is < 2. Let's keep tracking it.
+          else
+            StraightServer.logger.info "Resuming tracking of order #{order.id}, current status is #{order.status}, time before expiration: #{order.time_left_before_expiration} seconds."
+            StraightServer::Thread.new do
+              order.start_periodic_status_check
+            end
           end
         end
       end
