@@ -13,6 +13,17 @@ gateways:
     default_currency: 'BTC'
     orders_expiration_period: 600 # seconds
 
+    # This options decides whether we should also check the DB for status updates first
+    # when we check order status. That is, if we're tracking an order and this option
+    # is set to true, it first fetches the fields from the local DB, sees if the status has changed there,
+    # and if it did - we no longer need to query the blockchain.
+    #
+    # Usecase? Currently mostly debugging (so set it to false for production). For example,
+    # when testing payments, you don't actually want to pay, you can just run the server console,
+    # change order status in the DB and see how your client picks it up, showing you that your
+    # order has been paid for.
+    check_order_status_in_db_first: true # Consider changing to `false` in production.
+
     # The order matters here, we check for prices with the first adapter,
     # if it fails, move on to the next
     exchange_rate_adapters:

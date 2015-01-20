@@ -32,6 +32,13 @@ RSpec.describe StraightServer::Order do
     @order.start_periodic_status_check
   end
 
+  it "checks DB for a status update first if there respective option for the gateway is turned on" do
+    @order.gateway.check_order_status_in_db_first = true
+    StraightServer::Order.where(id: @order.id).update(status: 2)
+    expect(@order.status(reload: false)).to eq(0)
+    expect(@order.status(reload: true)).to eq(2)
+  end
+
   describe "DB interaction" do
 
     it "saves a new order into the database" do

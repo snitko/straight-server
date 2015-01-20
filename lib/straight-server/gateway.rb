@@ -195,6 +195,7 @@ module StraightServer
 
     attr_accessor :exchange_rate_adapter_names
     attr_accessor :orders_expiration_period
+    attr_accessor :check_order_status_in_db_first
 
     # Because this is a config based gateway, we only save last_keychain_id
     # and nothing more.
@@ -226,14 +227,15 @@ module StraightServer
     StraightServer::Config.gateways.each do |name, attrs|
       i += 1
       gateway = self.new
-      gateway.pubkey                   = attrs['pubkey']
-      gateway.confirmations_required   = attrs['confirmations_required'].to_i
-      gateway.order_class              = attrs['order_class']
-      gateway.secret                   = attrs['secret']
-      gateway.check_signature          = attrs['check_signature']
-      gateway.callback_url             = attrs['callback_url']
-      gateway.default_currency         = attrs['default_currency']
-      gateway.orders_expiration_period = attrs['orders_expiration_period']
+      gateway.pubkey                         = attrs['pubkey']
+      gateway.confirmations_required         = attrs['confirmations_required'].to_i
+      gateway.order_class                    = attrs['order_class']
+      gateway.secret                         = attrs['secret']
+      gateway.check_signature                = attrs['check_signature']
+      gateway.callback_url                   = attrs['callback_url']
+      gateway.default_currency               = attrs['default_currency']
+      gateway.orders_expiration_period       = attrs['orders_expiration_period']
+      gateway.check_order_status_in_db_first = attrs['check_order_status_in_db_first']
       gateway.name                     = name
       gateway.id                       = i
       gateway.exchange_rate_adapter_names = attrs['exchange_rate_adapters']

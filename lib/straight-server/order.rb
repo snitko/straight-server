@@ -18,6 +18,29 @@ module StraightServer
       @gateway        = g
     end
 
+    # This method is called from the Straight::OrderModule::Prependable
+    # using super(). The reason it is reloaded here is because sometimes
+    # we want to query the DB first and see if status has changed there.
+    #
+    # If it indeed changed in the DB and is > 1, then the original
+    # Straight::OrderModule::Prependable#status method will not try to
+    # query the blockchain (using adapters) because the status has already
+    # been changed to be > 1.
+    #
+    # This is mainly useful for debugging. For example,
+    # when testing payments, you don't actually want to pay, you can just
+    # run the server console, change order status in the DB and see how your
+    # client picks it up, showing you that your order has been paid for.
+    #
+    # If you want the feature described above on,
+    # set Gateway#check_order_status_in_db_first to true
+    def status(as_sym: false, reload: false)
+      if reload && gateway.check_order_status_in_db_first
+        self.refresh
+      end
+      self[:status]
+    end
+
     def save
       super # calling Sequel::Model save
       @status_changed = false
