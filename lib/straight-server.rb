@@ -15,7 +15,7 @@ require_relative 'straight-server/orders_controller'
 
 module StraightServer
 
-  VERSION = Gem.latest_spec_for('straight-server').version.to_s
+  VERSION = File.read(File.expand_path('../', File.dirname(__FILE__)) + '/VERSION')
 
   class << self
     attr_accessor :db_connection, :logger
