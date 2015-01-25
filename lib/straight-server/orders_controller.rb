@@ -15,7 +15,7 @@ module StraightServer
     def create
       begin
         order = @gateway.create_order(
-          amount:           @params['amount'],
+          amount:           @params['amount'], # this is satoshi
           currency:         @params['currency'],
           btc_denomination: @params['btc_denomination'],
           id:               @params['order_id'],

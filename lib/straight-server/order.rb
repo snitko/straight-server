@@ -51,7 +51,7 @@ module StraightServer
     end
 
     def to_h
-      super.merge({ id: id, payment_id: payment_id })
+      super.merge({ id: id, payment_id: payment_id, amount_in_btc: amount_in_btc(as: :string) })
     end
 
     def to_json
