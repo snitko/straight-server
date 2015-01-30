@@ -40,7 +40,7 @@ module StraightServer
         self.refresh
         unless self.status == old_status
           @status_changed = true 
-          gateway.order_status_changed(self)
+          self.gateway.order_status_changed(self)
         end
       end
       self[:status]
