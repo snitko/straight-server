@@ -36,7 +36,12 @@ module StraightServer
     # set Gateway#check_order_status_in_db_first to true
     def status(as_sym: false, reload: false)
       if reload && gateway.check_order_status_in_db_first
+        old_status = self.status
         self.refresh
+        unless self.status == old_status
+          @status_changed = true 
+          gateway.order_status_changed(self)
+        end
       end
       self[:status]
     end
@@ -44,10 +49,6 @@ module StraightServer
     def save
       super # calling Sequel::Model save
       @status_changed = false
-    end
-
-    def status_changed?
-      @status_changed
     end
 
     def to_h
@@ -71,16 +72,6 @@ module StraightServer
       "order_id=#{id}&amount=#{amount}&status=#{status}&address=#{address}&tid=#{tid}"
     end
 
-    def start_periodic_status_check
-      StraightServer.logger.info "Starting periodic status checks of the order #{self.id}"
-      super
-    end
-
-    def check_status_on_schedule(period: 10, iteration_index: 0)
-      StraightServer.logger.info "Checking status of order #{self.id}"
-      super
-    end
-
     def before_create
       self.payment_id = gateway.sign_with_secret("#{id}#{amount}#{created_at}")
       super
@@ -91,9 +82,15 @@ module StraightServer
     # an order that is already expired. Or, if it's not expired yet,
     # we make sure to stop all checks as soon as it expires, but not later.
     def start_periodic_status_check(duration: gateway.orders_expiration_period)
+      StraightServer.logger.info "Starting periodic status checks of the order #{self.id}"
       if (t = time_left_before_expiration) > 0
         check_status_on_schedule(duration: t)
       end
+    end
+
+    def check_status_on_schedule(period: 10, iteration_index: 0, duration: 600, time_passed: 0)
+      StraightServer.logger.info "Checking status of order #{self.id}"
+      super
     end
 
     def time_left_before_expiration(duration: gateway.orders_expiration_period)
