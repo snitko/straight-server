@@ -222,6 +222,30 @@ turn on email notifications, so that when a FATAL errors occurs, an email is sen
 
 I would also recommend you to use something like *monit* daemon to monitor a *straight-server* process.
 
+Running in different environments
+---------------------------------
+Additionally, there is a `--config-dir` (short version is `-c`) option that allows you to set the
+config directory for the server. It becomes quite convenient if you decide to run, for example, both
+production and staging instances on one machine. I decided against having config file sections for each environment
+as this would be more complicated and quite unnatural. Apart from different config files, one might argue you can have
+a different set of addons and different versions of them in the `~/.straight/addons` dir. So it's better to keep them separate.
+
+If you think of wrong examples out there, consider Rails: why would I want to have a database.yml file with both
+development and production sections if I know for sure I'm only running this instance in production env?
+
+So, with straight, you can simply create a separate config dir for each instance. For example, if I want to run
+both production and staging on my server, I'd do this:
+
+1. Create `~/.straight/production` and `~/.straight/staging` dirs
+2. Run two instances like this:
+
+       straight-server --config-dir=~/.straight/production 
+       straight-server --config-dir=~/.straight/staging
+
+It's worth saying that currently, there is no default settings for production, staging or development.
+It is you who defines what a production or a staging environment is, by changing the config file. Those words
+are only used as examples. You may call your environment whatever you like.
+
 Requirements
 ------------
 Ruby 2.1 or later.
