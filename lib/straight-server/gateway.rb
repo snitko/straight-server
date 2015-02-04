@@ -207,7 +207,7 @@ module StraightServer
     # If the file doesn't exist, we create it. Later, whenever an attribute is updated,
     # we save it to the file.
     def load_last_keychain_id!
-      @last_keychain_id_file = StraightServer::Initializer::STRAIGHT_CONFIG_PATH +
+      @last_keychain_id_file = StraightServer::Initializer::ConfigDir.path +
                                "/#{name}_last_keychain_id"
       if File.exists?(@last_keychain_id_file)
         self.last_keychain_id = File.read(@last_keychain_id_file).to_i

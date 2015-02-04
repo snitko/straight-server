@@ -2,10 +2,35 @@ module StraightServer
 
   module Initializer
 
-    GEM_ROOT             = File.expand_path('../..', File.dirname(__FILE__))
-    STRAIGHT_CONFIG_PATH = ENV['HOME'] + '/.straight'
+    GEM_ROOT = File.expand_path('../..', File.dirname(__FILE__))
+
+    module ConfigDir
+
+      class << self
+
+        # Determine config dir or set default. Useful when we want to
+        # have different settings for production or staging or development environments.
+        def set!
+          @@config_dir = ENV['HOME'] + '/.straight'
+          ARGV.each do |a|
+            if a =~ /\A--config-dir=.+/
+              @@config_dir = File.expand_path(a.sub('--config-dir=', ''))
+              break
+            end
+          end
+          puts "Setting config dir to #{@@config_dir}"
+        end
+
+        def path
+          @@config_dir
+        end
+
+      end
+
+    end
 
     def prepare
+      ConfigDir.set!
       create_config_files
       read_config_file
       create_logger
@@ -22,15 +47,15 @@ module StraightServer
 
       def create_config_files
 
-        FileUtils.mkdir_p(STRAIGHT_CONFIG_PATH) unless File.exist?(STRAIGHT_CONFIG_PATH)
+        FileUtils.mkdir_p(ConfigDir.path) unless File.exist?(ConfigDir.path)
 
-        unless File.exist?(STRAIGHT_CONFIG_PATH + '/addons.yml')
+        unless File.exist?(ConfigDir.path + '/addons.yml')
           puts "\e[1;33mNOTICE!\e[0m \e[33mNo file ~/.straight/addons.yml was found. Created an empty sample for you.\e[0m"
           puts "No need to restart until you actually list your addons there. Now will continue loading StraightServer."
           FileUtils.cp(GEM_ROOT + '/templates/addons.yml', ENV['HOME'] + '/.straight/') 
         end
 
-        unless File.exist?(STRAIGHT_CONFIG_PATH + '/config.yml')
+        unless File.exist?(ConfigDir.path + '/config.yml')
           puts "\e[1;33mWARNING!\e[0m \e[33mNo file ~/.straight/config was found. Created a sample one for you.\e[0m"
           puts "You should edit it and try starting the server again.\n"
 
@@ -42,7 +67,7 @@ module StraightServer
       end
 
       def read_config_file
-        YAML.load_file(STRAIGHT_CONFIG_PATH + '/config.yml').each do |k,v|
+        YAML.load_file(ConfigDir.path + '/config.yml').each do |k,v|
           StraightServer::Config.send(k + '=', v)
         end
       end
@@ -53,7 +78,7 @@ module StraightServer
         db_config = StraightServer::Config.db.inject({}){|memo,(k,v)| memo[k.to_sym] = v; memo}
 
         db_name = if db_config[:adapter] == 'sqlite'
-          STRAIGHT_CONFIG_PATH + "/" + db_config[:name]
+          ConfigDir.path + "/" + db_config[:name]
         else
           db_config[:name]
         end
@@ -82,7 +107,7 @@ module StraightServer
         require_relative 'logger'
         StraightServer.logger = StraightServer::Logger.new(
           log_level:       ::Logger.const_get(Config.logmaster['log_level'].upcase),
-          file:            STRAIGHT_CONFIG_PATH + '/' + Config.logmaster['file'],
+          file:            ConfigDir.path + '/' + Config.logmaster['file'],
           raise_exception: Config.logmaster['raise_exception'],
           name:            Config.logmaster['name'],
           email_config:    Config.logmaster['email_config']
@@ -108,11 +133,11 @@ module StraightServer
       # is already in the LOAD_PATH somehow, with rubygems for example.
       def load_addons
         # load ~/.straight/addons.yml
-        addons = YAML.load_file(STRAIGHT_CONFIG_PATH + '/addons.yml')
+        addons = YAML.load_file(ConfigDir.path + '/addons.yml')
         addons.each do |name, addon|
           StraightServer.logger.info "Loading #{name} addon"
           if addon['path'] # First, check the ~/.straight/addons dir
-            require STRAIGHT_CONFIG_PATH + '/' + addon['path']
+            require ConfigDir.path + '/' + addon['path']
           else # then assume it's already loaded using rubygems
             require name
           end
@@ -151,6 +176,6 @@ module StraightServer
         end
       end
 
-  end
+    end
 
 end

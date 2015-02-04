@@ -6,7 +6,7 @@ module StraightServer
 
       n.times { puts "\n" }
 
-      File.open(StraightServer::Initializer::STRAIGHT_CONFIG_PATH + '/' + Config.logmaster['file'], 'a') do |f|
+      File.open(StraightServer::Initializer.config_dir + '/' + Config.logmaster['file'], 'a') do |f|
         n.times do
           f.puts "\n"
         end

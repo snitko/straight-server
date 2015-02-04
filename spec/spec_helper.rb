@@ -22,7 +22,7 @@ ENV['HOME'] = File.expand_path(File.dirname(__FILE__))
 require_relative "../lib/straight-server/config"
 require_relative "../lib/straight-server/initializer"
 include StraightServer::Initializer
-
+StraightServer::Initializer::ConfigDir.set!
 read_config_file
 
 # 4. Load the rest of the files, including models, which are now ready

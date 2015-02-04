@@ -16,6 +16,16 @@ module StraightServer
       super
     end
 
+    def options_parser(opts, options)
+      # Even though we define that option here, it is purely for the purposes of compliance with
+      # Goliath server. If don't do that, there will be an exception saying "unrecognized argument".
+      # In reality, we make use of --config-dir value in the in StraightServer::Initializer and stored
+      # it in StraightServer::Initializer.config_dir property. 
+      opts.on('-c', '--config-dir STRING', "Directory where config files and addons are placed") do |val|
+        options[:config_dir] = File.expand_path(val || ENV['HOME'] + '/.straight' )
+      end
+    end
+
     def response(env)
       # POST /gateways/1/orders   - create order
       # GET  /gateways/1/orders/1 - see order info
