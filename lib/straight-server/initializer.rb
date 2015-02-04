@@ -16,6 +16,9 @@ module StraightServer
             if a =~ /\A--config-dir=.+/
               @@config_dir = File.expand_path(a.sub('--config-dir=', ''))
               break
+            elsif a =~ /\A-c .+/
+              @@config_dir = File.expand_path(a.sub('-c ', ''))
+              break
             end
           end
           puts "Setting config dir to #{@@config_dir}"
