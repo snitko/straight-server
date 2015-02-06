@@ -86,6 +86,7 @@ module StraightServer
       if (t = time_left_before_expiration) > 0
         check_status_on_schedule(duration: t)
       end
+      self.save if self.status_changed?
     end
 
     def check_status_on_schedule(period: 10, iteration_index: 0, duration: 600, time_passed: 0)

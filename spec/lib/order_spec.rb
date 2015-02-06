@@ -40,6 +40,15 @@ RSpec.describe StraightServer::Order do
     expect(@order.status(reload: true)).to eq(2)
   end
 
+  it "updates order status when the time in which it expires passes (periodic status checks finish)" do
+    allow(@order).to receive(:status=) do
+      expect(@order).to receive(:status_changed?).and_return(true)
+      expect(@order).to receive(:save)
+    end
+    allow(@order).to receive(:check_status_on_schedule).with(duration: 900) { @order.status = 5 }
+    @order.start_periodic_status_check
+  end
+
   describe "DB interaction" do
 
     it "saves a new order into the database" do
