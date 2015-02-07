@@ -246,6 +246,65 @@ It's worth saying that currently, there is no default settings for production, s
 It is you who defines what a production or a staging environment is, by changing the config file. Those words
 are only used as examples. You may call your environment whatever you like.
 
+
+Addons
+------
+WARNING: this is currently work in progress. The final specification of how addons should be added
+and how they interact with the server may change.
+
+Currently there is only one use case for addons and thus only one way in which addons can interact with the server itself:
+adding controllers and routes for them. Now let's look at how we should do that:
+
+1. All addons are placed under `~/.straight/addons/` (of course, it is wise to use symlinks).
+
+2. `./straight/addons.yml` file lists addons and tells straight-server what are the names of the files to be loaded.
+The format of the file is the following:
+
+    my_addon                             # <- name doesn't affect anything, just shows up in the log file
+      path: addons/my_addon/lib/my_addon # <- This is unnecessary if addon is already in the LOAD_PATH
+      module: MyAddon                    # <- actual module should be a submodule of StraightServer::Addon
+
+3. In `./straight/addons/my_addon/lib/` we will place two files, `my_addon.rb` and 'my_controller.rb'. Below is their contents:
+
+
+    # my_addon.rb
+    
+    require_relative 'my_controller'
+
+    module StraightServer
+      module Addon
+        module MyAddon
+          
+          def self.extended(obj)
+            obj.add_route /\A\/my_controller/.*\Z/ do |env|
+              controller = MyController.new(env)
+              controller.show
+            end
+          end
+
+        end
+      end
+    end
+
+As you can guess, `#add_route` is a straight-server's special method for defining routes, very similar to Rails.
+The piece of code above will force all requests where urls are starting with `/my_controller` to be handled by
+`MyController#show`:
+
+
+    # my_controller.rb
+
+    module StraightServer
+      class MyController
+        def show
+          [200, {}, "Hello world! This is MyController speaking!"]
+        end
+      end
+    end
+
+And this in turn will render us the text "Hello world! This is MyController speaking!".
+Here, we've just created our first addon.
+
+
 Requirements
 ------------
 Ruby 2.1 or later.
