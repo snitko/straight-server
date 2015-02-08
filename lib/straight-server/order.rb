@@ -8,6 +8,7 @@ module StraightServer
 
     plugin :serialization
     serialize_attributes :marshal, :callback_response
+    serialize_attributes :marshal, :data
 
     def gateway
       @gateway ||= Gateway.find_by_id(gateway_id)

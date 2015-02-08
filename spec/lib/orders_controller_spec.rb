@@ -32,6 +32,12 @@ RSpec.describe StraightServer::OrdersController do
       send_request "POST", '/gateways/2/orders', amount: 10
     end
 
+    it "passes data param to Order which then saves it serialized" do
+      allow(StraightServer::Thread).to receive(:new) # ignore periodic status checks, we're not testing it here
+      send_request "POST", '/gateways/2/orders', amount: 10, data: { hello: 'world' }
+      expect(StraightServer::Order.last.data.hello).to eq('world')
+    end
+
   end
 
   describe "show action" do

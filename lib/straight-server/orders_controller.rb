@@ -19,7 +19,8 @@ module StraightServer
           currency:         @params['currency'],
           btc_denomination: @params['btc_denomination'],
           id:               @params['order_id'],
-          signature:        @params['signature']
+          signature:        @params['signature'],
+          data:             @params['data']
         )
         StraightServer::Thread.new do
           order.start_periodic_status_check
