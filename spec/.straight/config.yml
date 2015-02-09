@@ -2,9 +2,6 @@
 # useful when your run many gateways on the same server.
 gateways_source: config
 
-# Used to encrypt gateway secrets in the DB.
-server_secret: 'global server secret'
-
 gateways:
 
   default:

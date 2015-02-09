@@ -143,7 +143,7 @@ module StraightServer
             sleep(delay)
             send_callback_http_request(order, delay: delay*2)
           else
-            StraightServer.logger.warn "Callback request for order #{order.id} faile, see order's #callback_response field for details"
+            StraightServer.logger.warn "Callback request for order #{order.id} failed, see order's #callback_response field for details"
           end
         end
         
@@ -165,6 +165,13 @@ module StraightServer
       encrypt_secret
     end
     
+    # We cannot allow to store gateway secret in a DB plaintext, this would be completetly unsecure.
+    # Althougth we use symmetrical encryption here and store the encryption key in the
+    # server's in a special file (~/.straight/server_secret), which in turn can also be stolen,
+    # this is still marginally better than doing nothing.
+    #
+    # Also, server admnistrators now have the freedom of developing their own strategy
+    # of storing that secret - it doesn't have to be stored on the same machine.
     def secret
       decrypt_secret
     end

@@ -58,10 +58,17 @@ module StraightServer
           FileUtils.cp(GEM_ROOT + '/templates/addons.yml', ENV['HOME'] + '/.straight/') 
         end
 
+        unless File.exist?(ConfigDir.path + '/server_secret')
+          puts "\e[1;33mNOTICE!\e[0m \e[33mNo file ~/.straight/server_secret was found. Created one for you.\e[0m"
+          puts "No need to restart so far. Now will continue loading StraightServer."
+          File.open(ConfigDir.path + '/server_secret', "w") do |f|
+            f.puts String.random(16)
+          end
+        end
+
         unless File.exist?(ConfigDir.path + '/config.yml')
           puts "\e[1;33mWARNING!\e[0m \e[33mNo file ~/.straight/config was found. Created a sample one for you.\e[0m"
           puts "You should edit it and try starting the server again.\n"
-          puts "Do not forget to replace server_secret!\n"
 
           FileUtils.cp(GEM_ROOT + '/templates/config.yml', ENV['HOME'] + '/.straight/') 
           puts "Shutting down now.\n\n"
@@ -74,6 +81,7 @@ module StraightServer
         YAML.load_file(ConfigDir.path + '/config.yml').each do |k,v|
           StraightServer::Config.send(k + '=', v)
         end
+        StraightServer::Config.server_secret = File.read(ConfigDir.path + '/server_secret').chomp
       end
 
       def connect_to_db

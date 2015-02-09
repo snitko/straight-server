@@ -2,9 +2,6 @@
 # useful when your run many gateways on the same server.
 gateways_source: config
 
-# Used to encrypt gateway secrets in the DB.
-server_secret: 'global server secret' # TODO: replace it with your own secret!
-
 gateways:
   default:
     pubkey: xpub-xxx # <- TODO: change this to your BIP32 pubkey

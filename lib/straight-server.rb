@@ -10,6 +10,7 @@ require 'net/http'
 require 'faye/websocket'
 Sequel.extension :migration
 
+require_relative 'straight-server/random_string'
 require_relative 'straight-server/config'
 require_relative 'straight-server/initializer'
 require_relative 'straight-server/thread'
