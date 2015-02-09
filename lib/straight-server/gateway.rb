@@ -174,8 +174,8 @@ module StraightServer
       def encrypt_secret
         cipher           = OpenSSL::Cipher::AES.new(128, :CBC)
         cipher.encrypt
-        cipher.key       = Digest::MD5.hexdigest(Config.server_secret)[0...16]
-        cipher.iv        = iv = Digest::MD5.hexdigest('aes_iv')[0...16] # TODO: replace 'aes_iv'
+        cipher.key       = Digest::MD5.hexdigest(Config.server_secret)[0,16]
+        cipher.iv        = iv = Digest::MD5.hexdigest("#{self.id}#{Config.server_secret}")[0,16]
         encrypted        = cipher.update(self[:secret]) << cipher.final()
         base64_encrypted = Base64.strict_encode64(encrypted).encode('utf-8') 
         result           = "#{iv}:#{base64_encrypted}"
@@ -193,7 +193,7 @@ module StraightServer
         decipher      = OpenSSL::Cipher::AES.new(128, :CBC)
         iv, encrypted = encrypted_field.split(':')
         decipher.decrypt
-        decipher.key  = Digest::MD5.hexdigest(Config.server_secret)[0...16]
+        decipher.key  = Digest::MD5.hexdigest(Config.server_secret)[0,16]
         decipher.iv   = iv
         decipher.update(Base64.decode64(encrypted)) + decipher.final
       end
