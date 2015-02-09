@@ -122,7 +122,10 @@ RSpec.describe StraightServer::Gateway do
   describe "db based gateway" do
 
     before(:each) do
-      @gateway = StraightServer::GatewayOnDB.create(
+      # clean the database
+      DB.run("DELETE FROM gateways")
+
+      @gateway = StraightServer::GatewayOnDB.new(
         confirmations_required: 0,
         pubkey:      'xpub-000',
         order_class: 'StraightServer::Order',
@@ -134,6 +137,7 @@ RSpec.describe StraightServer::Gateway do
     end
     
     it "saves and retrieves last_keychain_id from the db" do
+      @gateway.save
       expect(DB[:gateways][:name => 'default'][:last_keychain_id]).to eq(0)
       @gateway.increment_last_keychain_id!
       expect(DB[:gateways][:name => 'default'][:last_keychain_id]).to eq(1)
@@ -141,6 +145,12 @@ RSpec.describe StraightServer::Gateway do
       expect(@gateway).to receive(:order_for_keychain_id).with(@order_for_keychain_id_args.merge({ keychain_id: 2})).once.and_return(@order_mock)
       @gateway.create_order(amount: 1, signature: hmac_sha256(1, 'secret'), id: 1)
       expect(DB[:gateways][:name => 'default'][:last_keychain_id]).to eq(2)
+    end
+
+    it "encryptes and decrypts the gateway secret" do
+      expect(@gateway.send(:encrypt_secret)).to eq("4ea13b1da9fe41c3:Pj1ZlIyBLxAEfPczidA8qw==")
+      expect(@gateway.send(:decrypt_secret)).to eq("secret")
+      expect(@gateway.secret).to eq("secret")
     end
 
   end

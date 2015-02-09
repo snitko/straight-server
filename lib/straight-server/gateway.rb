@@ -160,6 +160,44 @@ module StraightServer
     plugin :timestamps, create: :created_at, update: :updated_at
     plugin :serialization, :marshal, :exchange_rate_adapter_names
 
+    def before_create
+      super
+      encrypt_secret
+    end
+    
+    def secret
+      decrypt_secret
+    end
+
+    private
+
+      def encrypt_secret
+        cipher           = OpenSSL::Cipher::AES.new(128, :CBC)
+        cipher.encrypt
+        cipher.key       = Digest::MD5.hexdigest(Config.server_secret)[0...16]
+        cipher.iv        = iv = Digest::MD5.hexdigest('aes_iv')[0...16] # TODO: replace 'aes_iv'
+        encrypted        = cipher.update(self[:secret]) << cipher.final()
+        base64_encrypted = Base64.strict_encode64(encrypted).encode('utf-8') 
+        result           = "#{iv}:#{base64_encrypted}"
+        
+        # Check whether we can decrypt. It should not be possible to encrypt the
+        # gateway secret unless we are sure we can decrypt it.
+        if decrypt_secret(result) == self[:secret]
+          self.secret = result
+        else
+          raise "Decrypted and original secrets don't match! Cannot proceed with writing the encrypted gateway secret."
+        end
+      end
+
+      def decrypt_secret(encrypted_field=self[:secret])
+        decipher      = OpenSSL::Cipher::AES.new(128, :CBC)
+        iv, encrypted = encrypted_field.split(':')
+        decipher.decrypt
+        decipher.key  = Digest::MD5.hexdigest(Config.server_secret)[0...16]
+        decipher.iv   = iv
+        decipher.update(Base64.decode64(encrypted)) + decipher.final
+      end
+
   end
 
   # Uses a config file to load attributes and a special _last_keychain_id file

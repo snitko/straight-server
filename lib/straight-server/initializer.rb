@@ -61,6 +61,7 @@ module StraightServer
         unless File.exist?(ConfigDir.path + '/config.yml')
           puts "\e[1;33mWARNING!\e[0m \e[33mNo file ~/.straight/config was found. Created a sample one for you.\e[0m"
           puts "You should edit it and try starting the server again.\n"
+          puts "Do not forget to replace server_secret!\n"
 
           FileUtils.cp(GEM_ROOT + '/templates/config.yml', ENV['HOME'] + '/.straight/') 
           puts "Shutting down now.\n\n"
