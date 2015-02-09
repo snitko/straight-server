@@ -5,7 +5,6 @@ require 'straight'
 require 'logmaster'
 require 'openssl'
 require 'base64'
-require 'digest/sha2'
 require 'net/http'
 require 'faye/websocket'
 Sequel.extension :migration

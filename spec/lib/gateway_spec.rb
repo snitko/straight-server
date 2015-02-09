@@ -148,7 +148,7 @@ RSpec.describe StraightServer::Gateway do
     end
 
     it "encryptes and decrypts the gateway secret" do
-      expect(@gateway.send(:encrypt_secret)).to eq("69bee695fcd6a8d2:Soa2owvDwnJajnLiq9ymSQ==")
+      expect(@gateway.send(:encrypt_secret)).to eq("96c1c24edff5c1c2:6THJEZqg+2qlDhtWE2Tytg==")
       expect(@gateway.send(:decrypt_secret)).to eq("secret")
       expect(@gateway.secret).to eq("secret")
     end
