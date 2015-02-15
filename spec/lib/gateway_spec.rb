@@ -36,6 +36,12 @@ RSpec.describe StraightServer::Gateway do
     expect(@gateway.create_order(amount: 2252.706, currency: 'USD').amount).to eq(500000000)
   end
 
+  it "doesn't allow to create a new order if the gateway is inactive" do
+    @gateway.active = false
+    expect( -> { @gateway.create_order }).to raise_exception(StraightServer::GatewayModule::GatewayInactive)
+    @gateway.active = true
+  end
+
   context "callback url" do
 
     before(:each) do

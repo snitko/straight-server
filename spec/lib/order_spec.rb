@@ -7,6 +7,7 @@ RSpec.describe StraightServer::Order do
     DB.run("DELETE FROM orders")
     @gateway = double("Straight Gateway mock")
     allow(@gateway).to receive(:id).and_return(1)
+    allow(@gateway).to receive(:active).and_return(true)
     @order = create(:order, gateway_id: @gateway.id)
     allow(@gateway).to receive(:fetch_transactions_for).with(anything).and_return([])
     allow(@gateway).to receive(:order_status_changed).with(anything)
@@ -47,6 +48,11 @@ RSpec.describe StraightServer::Order do
     end
     allow(@order).to receive(:check_status_on_schedule).with(duration: 900) { @order.status = 5 }
     @order.start_periodic_status_check
+  end
+
+  it "doesn't allow to create an order for inactive gateway" do
+    allow(@gateway).to receive(:active).and_return(false)
+    expect( -> { create(:order, gateway_id: @gateway.id) }).to raise_exception(Sequel::ValidationFailed, "gateway is inactive, cannot create order for inactive gateway")
   end
 
   describe "DB interaction" do

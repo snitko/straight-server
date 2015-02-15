@@ -17,6 +17,7 @@ gateways:
       - Bitpay
       - Coinbase
       - Bitstamp
+    active: true
   second_gateway:
     pubkey: 'xpub-001'
     confirmations_required: 0
@@ -30,6 +31,7 @@ gateways:
       - Bitpay
       - Coinbase
       - Bitstamp
+    active: true
 
 db:
   adapter: sqlite

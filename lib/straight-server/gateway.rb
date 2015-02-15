@@ -13,6 +13,7 @@ module StraightServer
     class CallbackUrlBadResponse     < Exception; end
     class WebsocketExists            < Exception; end
     class WebsocketForCompletedOrder < Exception; end
+    class GatewayInactive            < Exception; end
 
     CALLBACK_URL_ATTEMPT_TIMEFRAME = 3600 # seconds
 
@@ -45,6 +46,9 @@ module StraightServer
     # Creates a new order and saves into the DB. Checks if the MD5 hash
     # is correct first.
     def create_order(attrs={})
+
+      raise GatewayInactive unless self.active
+
       StraightServer.logger.info "Creating new order with attrs: #{attrs}"
       signature = attrs.delete(:signature)
       raise InvalidOrderId if check_signature && (attrs[:id].nil? || attrs[:id].to_i <= 0)
@@ -241,6 +245,11 @@ module StraightServer
     attr_accessor :exchange_rate_adapter_names
     attr_accessor :orders_expiration_period
     attr_accessor :check_order_status_in_db_first
+   
+    # This affects whether it is possible to create a new order with the gateway.
+    # If it's set to false, then it won't be possible to create a new order, but
+    # it will keep checking on the existing ones.
+    attr_accessor :active
 
     # Because this is a config based gateway, we only save last_keychain_id
     # and nothing more.
@@ -281,6 +290,7 @@ module StraightServer
       gateway.default_currency               = attrs['default_currency']
       gateway.orders_expiration_period       = attrs['orders_expiration_period']
       gateway.check_order_status_in_db_first = attrs['check_order_status_in_db_first']
+      gateway.active                         = attrs['active']
       gateway.name                     = name
       gateway.id                       = i
       gateway.exchange_rate_adapter_names = attrs['exchange_rate_adapters']
