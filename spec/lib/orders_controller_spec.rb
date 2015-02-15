@@ -38,6 +38,13 @@ RSpec.describe StraightServer::OrdersController do
       expect(StraightServer::Order.last.data.hello).to eq('world')
     end
 
+    it "renders 503 page when the gateway is inactive" do
+      @gateway.active = false
+      send_request "POST", '/gateways/2/orders', amount: 1
+      expect(response[0]).to eq(503)
+      expect(response[2]).to eq("The gateway is inactive, you cannot create order with it")
+    end
+
   end
 
   describe "show action" do

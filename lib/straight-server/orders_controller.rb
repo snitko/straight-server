@@ -34,6 +34,9 @@ module StraightServer
       rescue StraightServer::GatewayModule::InvalidOrderId
         StraightServer.logger.warn message = "An invalid id for order supplied: #{@params['order_id']}"
         [409, {}, message ]
+      rescue StraightServer::GatewayModule::GatewayInactive
+        StraightServer.logger.warn message = "The gateway is inactive, you cannot create order with it"
+        [503, {}, message ]
       end
     end
 
