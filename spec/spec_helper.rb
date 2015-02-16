@@ -69,7 +69,7 @@ RSpec.configure do |config|
   end
 
   config.after(:all) do
-    ["default_last_keychain_id", "second_gateway_last_keychain_id"].each do |f|
+    ["default_last_keychain_id", "second_gateway_last_keychain_id", "default_order_counters.yml"].each do |f|
       FileUtils.rm "#{ENV['HOME']}/.straight/#{f}" if File.exists?("#{ENV['HOME']}/.straight/#{f}")
     end
   end

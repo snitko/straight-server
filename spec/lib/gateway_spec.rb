@@ -123,6 +123,15 @@ RSpec.describe StraightServer::Gateway do
       expect(File.read("#{ENV['HOME']}/.straight/default_last_keychain_id").to_i).to eq(2)
     end
 
+    it "saves an retrieves info about how many orders of each status there currently are" do
+      expect(@gateway.order_counters).to include({ new: 0, unconfirmed: 0, paid: 0, underpaid: 0, overpaid: 0, expired: 0 })
+      @gateway.order_counters = { new: 1, unconfirmed: 2, paid: 3, underpaid: 4, overpaid: 5, expired: 6 }
+      @gateway.save_order_counters!
+      expect(YAML.load_file(StraightServer::Initializer::ConfigDir.path + "/#{@gateway.name}_order_counters.yml").keys_to_sym).to(
+        eq({ new: 1, unconfirmed: 2, paid: 3, underpaid: 4, overpaid: 5, expired: 6 })
+      )
+    end
+
   end
 
   describe "db based gateway" do
@@ -157,6 +166,15 @@ RSpec.describe StraightServer::Gateway do
       expect(@gateway.send(:encrypt_secret)).to eq("96c1c24edff5c1c2:6THJEZqg+2qlDhtWE2Tytg==")
       expect(@gateway.send(:decrypt_secret)).to eq("secret")
       expect(@gateway.secret).to eq("secret")
+    end
+
+    it "saves an retrieves info about how many orders of each status there currently are" do
+      @gateway.save
+      expect(@gateway.order_counters).to include({ new: 0, unconfirmed: 0, paid: 0, underpaid: 0, overpaid: 0, expired: 0 })
+      @gateway.order_counters = { new: 1, unconfirmed: 2, paid: 3, underpaid: 4, overpaid: 5, expired: 6 }
+      @gateway.save
+      @gateway.reload
+      expect(@gateway.order_counters).to eq({ new: 1, unconfirmed: 2, paid: 3, underpaid: 4, overpaid: 5, expired: 6 })
     end
 
   end

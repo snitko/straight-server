@@ -163,10 +163,12 @@ module StraightServer
     include GatewayModule
     plugin :timestamps, create: :created_at, update: :updated_at
     plugin :serialization, :marshal, :exchange_rate_adapter_names
+    plugin :serialization, :marshal, :order_counters
 
     def before_create
       super
       encrypt_secret
+      self.order_counters = { new: 0, unconfirmed: 0, paid: 0, underpaid: 0, overpaid: 0, expired: 0 }
     end
     
     # We cannot allow to store gateway secret in a DB plaintext, this would be completetly unsecure.
@@ -251,23 +253,54 @@ module StraightServer
     # it will keep checking on the existing ones.
     attr_accessor :active
 
+    # Stores info about how many orders of various types there currently are
+    attr_accessor :order_counters
+
     # Because this is a config based gateway, we only save last_keychain_id
     # and nothing more.
     def save
-      File.open(@last_keychain_id_file, 'w') {|f| f.write(last_keychain_id) }
+      save_last_keychain_id!
+      save_order_counters!
     end
 
     # Loads last_keychain_id from a file in the .straight dir.
     # If the file doesn't exist, we create it. Later, whenever an attribute is updated,
     # we save it to the file.
     def load_last_keychain_id!
-      @last_keychain_id_file = StraightServer::Initializer::ConfigDir.path +
-                               "/#{name}_last_keychain_id"
+      @last_keychain_id_file ||= StraightServer::Initializer::ConfigDir.path + "/#{name}_last_keychain_id"
       if File.exists?(@last_keychain_id_file)
         self.last_keychain_id = File.read(@last_keychain_id_file).to_i
       else
         self.last_keychain_id = 0
         save
+      end
+    end
+
+    def save_last_keychain_id!
+      @last_keychain_id_file ||= StraightServer::Initializer::ConfigDir.path + "/#{name}_last_keychain_id"
+      File.open(@last_keychain_id_file, 'w') {|f| f.write(last_keychain_id) }
+    end
+
+    # This method is a replacement for the Sequel's model one used in DB version of the gateway
+    # and it finds gateways using the index of @@gateways Array.
+    def self.find_by_id(id)
+      @@gateways[id.to_i-1]
+    end
+
+    def load_order_counters!
+      @order_counters_file ||= StraightServer::Initializer::ConfigDir.path + "/#{name}_order_counters.yml"
+      if File.exists?(@order_counters_file)
+        # Load YAML into hash, convert string keys to symbols in that hash
+        counters = YAML.load_file(@order_counters_file)
+        return self.order_counters = counters.keys_to_sym if counters
+      end
+      self.order_counters = { new: 0, unconfirmed: 0, paid: 0, underpaid: 0, overpaid: 0, expired: 0 }
+    end
+
+    def save_order_counters!
+      @order_counters_file ||= StraightServer::Initializer::ConfigDir.path + "/#{name}_order_counters.yml"
+      File.open(@order_counters_file, 'w') do |f|
+        f.write self.order_counters.to_yaml
       end
     end
 
@@ -296,14 +329,8 @@ module StraightServer
       gateway.exchange_rate_adapter_names = attrs['exchange_rate_adapters']
       gateway.initialize_exchange_rate_adapters
       gateway.load_last_keychain_id!
+      gateway.load_order_counters!
       @@gateways << gateway
-    end
-    
-
-    # This method is a replacement for the Sequel's model one used in DB version of the gateway
-    # and it finds gateways using the index of @@gateways Array.
-    def self.find_by_id(id)
-      @@gateways[id.to_i-1]
     end
 
   end
