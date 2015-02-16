@@ -49,7 +49,7 @@ module StraightServer
     private
 
       def create_config_files
-
+        require 'byebug'; debugger
         FileUtils.mkdir_p(ConfigDir.path) unless File.exist?(ConfigDir.path)
 
         unless File.exist?(ConfigDir.path + '/addons.yml')
