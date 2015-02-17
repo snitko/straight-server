@@ -1,60 +1,53 @@
+# require File.expand_path('../../lib/straight-server/initializer', File.dirname(__FILE__))
+require 'fileutils'
+require_relative '../../lib/straight-server/random_string'
+require_relative '../../lib/straight-server/initializer'
 
 RSpec.describe StraightServer::Initializer do
 
+  before(:each) do
+    remove_temp_dir
+    templates_dir = File.expand_path('../../templates', File.dirname(__FILE__))
+    ENV['HOME']   = File.expand_path('../temp', File.dirname(__FILE__))
+    class StraightServer::TestInitializerClass
+      include StraightServer::Initializer
+      include StraightServer::Initializer::ConfigDir
+    end
+    @test_class_object = StraightServer::TestInitializerClass.new
+  end
+
+  after(:each) do
+    remove_temp_dir
+  end
+
+  
   it "creates config files" do
-    1+1
-    require 'byebug'; debugger
-    1+1
-  end
-
-  it "" do
-    def connect_to_db
-
-      # symbolize keys for convenience
-      db_config = StraightServer::Config.db.inject({}){|memo,(k,v)| memo[k.to_sym] = v; memo}
-
-      db_name = if db_config[:adapter] == 'sqlite'
-        ConfigDir.path + "/" + db_config[:name]
-        # STRAIGHT_CONFIG_PATH + "/" + db_config[:name] # spec/tmp
-      else
-        db_config[:name]
+    StraightServer::Initializer::ConfigDir.set!
+    begin
+      @test_class_object.send(:create_config_files)
+    rescue Exception => e
+      expect(e.status).to eq 0 
+    end
+    expect(File.exist?(StraightServer::Initializer::ConfigDir.path)).to eq true
+    created_config_files = Dir.glob(File.join(File.expand_path('../temp', File.dirname(__FILE__)), '**', '*'), File::FNM_DOTMATCH).select { |f| File.file? f }
+    expect(created_config_files.size).to eq 3
+    created_config_files.each do |file|
+      case file
+      when file.match(/.*\.straight\/addons.yml\Z/)
+        extect(File.read(file)).to eq File.read(templates_dir + '/addons.yml')
+      when file.match(/.*\.straight\/config.yml\Z/)
+        extect(File.read(file)).to eq File.read(templates_dir + '/config.yml')
+      when file.match(/.*\.straight\/server_secret\Z/)
+        extect(File.read(file).size).to eq 16
       end
-      # check connection
-      StraightServer.db_connection = Sequel.connect(
-        "#{db_config[:adapter]}://"                                                   +
-        "#{db_config[:user]}#{(":" if db_config[:user])}"                             +
-        "#{db_config[:password]}#{("@" if db_config[:user] || db_config[:password])}" +
-        "#{db_config[:host]}#{(":" if db_config[:port])}"                             +
-        "#{db_config[:port]}#{("/" if db_config[:host] || db_config[:port])}"         +
-        "#{db_name}"
-      )
-      end
-
-  end
-
-  it "" do
-
-    def create_logger # should return Logger class
-      require_relative 'logger'
-      StraightServer.logger = StraightServer::Logger.new(
-        log_level:       ::Logger.const_get(Config.logmaster['log_level'].upcase),
-        file:            ConfigDir.path + '/' + Config.logmaster['file'],
-        raise_exception: Config.logmaster['raise_exception'],
-        name:            Config.logmaster['name'],
-        email_config:    Config.logmaster['email_config']
-      )
     end
 
   end
 
-  it "" do
-    def run_migrations
-      print "\nPending migrations for the database detected. Migrating..."
-      # expect sec migrator to receive run 
-      Sequel::Migrator.run(StraightServer.db_connection, GEM_ROOT + '/db/migrations/')
-      print "done\n\n"
-    end
-
+  def remove_temp_dir
+    if Dir.exist?(File.expand_path('../temp/', File.dirname(__FILE__)))
+      FileUtils.rm_r(File.expand_path('../temp/', File.dirname(__FILE__)))
+    end      
   end
 
 end
