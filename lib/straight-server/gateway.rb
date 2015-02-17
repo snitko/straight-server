@@ -136,8 +136,10 @@ module StraightServer
 
     def order_status_changed(order)
       statuses = Order::STATUSES.invert
-      increment_order_counter!(statuses[order.old_status], -1) if order.old_status
-      increment_order_counter!(statuses[order.status])
+      if StraightServer::Config.count_orders
+        increment_order_counter!(statuses[order.old_status], -1) if order.old_status
+        increment_order_counter!(statuses[order.status])
+      end
       super
     end
 

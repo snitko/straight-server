@@ -43,26 +43,6 @@ RSpec.describe StraightServer::Gateway do
     @gateway.active = true
   end
 
-  it "updates gateway's order counters when an associated order status changes" do
-    allow_any_instance_of(StraightServer::Order).to receive(:transaction).and_return({ tid: 'xxx' })
-    allow(@gateway).to receive(:send_callback_http_request)
-    allow(@gateway).to receive(:send_order_to_websocket_client)
-
-    expect(@gateway.order_counters(reload: true)).to eq({ new: 0, unconfirmed: 0, paid: 0, underpaid: 0, overpaid: 0, expired: 0 })
-    order = create(:order, gateway_id: @gateway.id)
-    expect(@gateway.order_counters(reload: true)).to eq({ new: 1, unconfirmed: 0, paid: 0, underpaid: 0, overpaid: 0, expired: 0 })
-    order.status = 2
-    expect(@gateway.order_counters(reload: true)).to eq({ new: 0, unconfirmed: 0, paid: 1, underpaid: 0, overpaid: 0, expired: 0 })
-
-    expect(@gateway.order_counters(reload: true)).to eq({ new: 0, unconfirmed: 0, paid: 1, underpaid: 0, overpaid: 0, expired: 0 })
-    order = create(:order, gateway_id: @gateway.id)
-    expect(@gateway.order_counters(reload: true)).to eq({ new: 1, unconfirmed: 0, paid: 1, underpaid: 0, overpaid: 0, expired: 0 })
-    order.status = 1
-    expect(@gateway.order_counters(reload: true)).to eq({ new: 0, unconfirmed: 1, paid: 1, underpaid: 0, overpaid: 0, expired: 0 })
-    order.status = 5
-    expect(@gateway.order_counters(reload: true)).to eq({ new: 0, unconfirmed: 0, paid: 1, underpaid: 0, overpaid: 0, expired: 1 })
-  end
-
   context "callback url" do
 
     before(:each) do
@@ -127,6 +107,35 @@ RSpec.describe StraightServer::Gateway do
       allow(StraightServer::Config).to receive(:count_orders).and_return(false)
       expect( -> { @gateway.order_counters(reload: true) }).to raise_exception(StraightServer::Gateway::OrderCountersDisabled) 
       expect( -> { @gateway.increment_order_counter!(:new) }).to raise_exception(StraightServer::Gateway::OrderCountersDisabled) 
+    end
+
+    it "updates gateway's order counters when an associated order status changes" do
+      allow_any_instance_of(StraightServer::Order).to receive(:transaction).and_return({ tid: 'xxx' })
+      allow(@gateway).to receive(:send_callback_http_request)
+      allow(@gateway).to receive(:send_order_to_websocket_client)
+
+      expect(@gateway.order_counters(reload: true)).to eq({ new: 0, unconfirmed: 0, paid: 0, underpaid: 0, overpaid: 0, expired: 0 })
+      order = create(:order, gateway_id: @gateway.id)
+      expect(@gateway.order_counters(reload: true)).to eq({ new: 1, unconfirmed: 0, paid: 0, underpaid: 0, overpaid: 0, expired: 0 })
+      order.status = 2
+      expect(@gateway.order_counters(reload: true)).to eq({ new: 0, unconfirmed: 0, paid: 1, underpaid: 0, overpaid: 0, expired: 0 })
+
+      expect(@gateway.order_counters(reload: true)).to eq({ new: 0, unconfirmed: 0, paid: 1, underpaid: 0, overpaid: 0, expired: 0 })
+      order = create(:order, gateway_id: @gateway.id)
+      expect(@gateway.order_counters(reload: true)).to eq({ new: 1, unconfirmed: 0, paid: 1, underpaid: 0, overpaid: 0, expired: 0 })
+      order.status = 1
+      expect(@gateway.order_counters(reload: true)).to eq({ new: 0, unconfirmed: 1, paid: 1, underpaid: 0, overpaid: 0, expired: 0 })
+      order.status = 5
+      expect(@gateway.order_counters(reload: true)).to eq({ new: 0, unconfirmed: 0, paid: 1, underpaid: 0, overpaid: 0, expired: 1 })
+    end
+
+    it "doesn't increment orders on status update unless the option is turned on (but no exception raised)" do
+      allow(StraightServer::Config).to receive(:count_orders).and_return(false)
+      allow_any_instance_of(StraightServer::Order).to receive(:transaction).and_return({ tid: 'xxx' })
+      allow(@gateway).to receive(:send_callback_http_request)
+      allow(@gateway).to receive(:send_order_to_websocket_client)
+      order = create(:order, gateway_id: @gateway.id)
+      expect(StraightServer::Config.redis[:connection].get("#{StraightServer::Config.redis[:prefix]}:gateway_#{@gateway.id}:new_orders_counter")).to be_nil
     end
 
   end
