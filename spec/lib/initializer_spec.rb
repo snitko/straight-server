@@ -25,7 +25,6 @@ RSpec.describe StraightServer::Initializer do
 
   
   it "creates config files" do
-
     begin
       @test_class_object.send(:create_config_files)
     rescue Exception => e
@@ -44,11 +43,9 @@ RSpec.describe StraightServer::Initializer do
         extect(File.read(file).size).to eq 16
       end
     end
-
   end
 
   it "connects to the database" do
-
     StraightServer::Config.db = { 
       adapter: 'sqlite',
       name: 'straight.db', 
@@ -59,11 +56,15 @@ RSpec.describe StraightServer::Initializer do
     end
     @test_class_object.send(:connect_to_db)
     expect(StraightServer.db_connection.test_connection).to be true
-
   end
 
   it "creates logger" do
-    # should return Logger class
+    log_configs = StraightServer::Config.logmaster = { 'log_level' => 'WARN', 'file' => 'straight.log' }
+    begin
+      @test_class_object.send(:create_config_files)
+    rescue SystemExit => e
+    end
+    expect(@test_class_object.send(:create_logger)).to be_kind_of(StraightServer::Logger)
   end
 
   it "runs migrations" do
