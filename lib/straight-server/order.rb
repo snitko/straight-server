@@ -1,6 +1,6 @@
 module StraightServer
  
-  class Order < Sequel::Model 
+  class Order < Sequel::Model
 
     include Straight::OrderModule
     plugin :validation_helpers
@@ -9,6 +9,12 @@ module StraightServer
     plugin :serialization
     serialize_attributes :marshal, :callback_response
     serialize_attributes :marshal, :data
+
+
+    plugin :after_initialize
+    def after_initialize
+      @status = self[:status] || 0
+    end
 
     def gateway
       @gateway ||= Gateway.find_by_id(gateway_id)
@@ -37,14 +43,15 @@ module StraightServer
     # set Gateway#check_order_status_in_db_first to true
     def status(as_sym: false, reload: false)
       if reload && gateway.check_order_status_in_db_first
-        old_status = self.status
+        @old_status = self.status
         self.refresh
-        unless self.status == old_status
+        unless self[:status] == @old_status
+          @status         = self[:status]
           @status_changed = true 
           self.gateway.order_status_changed(self)
         end
       end
-      self[:status]
+      self[:status] = @status
     end
 
     def save
@@ -77,6 +84,15 @@ module StraightServer
     def before_create
       self.payment_id = gateway.sign_with_secret("#{id}#{amount}#{created_at}")
       super
+    end
+
+    # Update Gateway's order_counters, incrementing the :new counter.
+    # All other increments/decrements happen in the the Gateway#order_status_changed callback,
+    # but the initial :new increment needs this code because the Gateway#order_status_changed 
+    # isn't called in this case.
+    def after_create
+      self.gateway.increment_order_counter_for_status(:new)
+      self.gateway.save
     end
 
     # Reloads the method in Straight engine. We need to take

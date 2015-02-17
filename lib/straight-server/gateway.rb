@@ -121,6 +121,20 @@ module StraightServer
       result
     end
 
+    def order_status_changed(order)
+      statuses = Order::STATUSES.invert
+      increment_order_counter_for_status(statuses[order.old_status], -1) if order.old_status
+      increment_order_counter_for_status(statuses[order.status])
+      self.save
+      super
+    end
+
+    def increment_order_counter_for_status(counter_status=:new, value=1)
+      self.order_counters = self.order_counters.merge(
+        { counter_status => self.order_counters[counter_status] + value }
+      )
+    end
+
     private
 
       # Tries to send a callback HTTP request to the resource specified

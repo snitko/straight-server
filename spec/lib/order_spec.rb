@@ -8,6 +8,9 @@ RSpec.describe StraightServer::Order do
     @gateway = double("Straight Gateway mock")
     allow(@gateway).to receive(:id).and_return(1)
     allow(@gateway).to receive(:active).and_return(true)
+    allow(@gateway).to receive(:order_status_changed)
+    allow(@gateway).to receive(:save)
+    allow(@gateway).to receive(:increment_order_counter_for_status)
     @order = create(:order, gateway_id: @gateway.id)
     allow(@gateway).to receive(:fetch_transactions_for).with(anything).and_return([])
     allow(@gateway).to receive(:order_status_changed).with(anything)
@@ -33,7 +36,8 @@ RSpec.describe StraightServer::Order do
     @order.start_periodic_status_check
   end
 
-  it "checks DB for a status update first if there respective option for the gateway is turned on" do
+  it "checks DB for a status update first if the respective option for the gateway is turned on" do
+    allow(@order).to receive(:transaction).and_raise("Shouldn't ever be happening!")
     @order.gateway.check_order_status_in_db_first = true
     StraightServer::Order.where(id: @order.id).update(status: 2)
     allow(@order.gateway).to receive(:order_status_changed)
