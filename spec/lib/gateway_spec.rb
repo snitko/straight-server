@@ -5,6 +5,7 @@ RSpec.describe StraightServer::Gateway do
   before(:each) do
     @gateway = StraightServer::GatewayOnConfig.find_by_id(1)
     @order_mock = double("order mock")
+    allow(@order_mock).to receive(:old_status)
     [:id, :gateway=, :save, :to_h, :id=].each { |m| allow(@order_mock).to receive(m) }
     @order_for_keychain_id_args = { amount: 1, keychain_id: 1, currency: nil, btc_denomination: nil }
   end
@@ -90,6 +91,51 @@ RSpec.describe StraightServer::Gateway do
       allow(Net::HTTP).to receive(:get_response).and_return(@response_mock)
       @gateway.order_status_changed(@order)
       expect(@order.callback_response).to eq({code: "200", body: "body"}) 
+    end
+
+  end
+
+  describe "order counters" do
+
+    it "uses 0 for non-existent order counters and increments them" do
+      expect(@gateway.order_counters(reload: true)).to include({ new: 0, unconfirmed: 0, paid: 0, underpaid: 0, overpaid: 0, expired: 0 })
+      @gateway.increment_order_counter!(:new)
+      expect(@gateway.order_counters(reload: true)[:new]).to eq(1)
+    end
+
+    it "raises exception when trying to access counters but the feature is disabled" do
+      allow(StraightServer::Config).to receive(:count_orders).and_return(false)
+      expect( -> { @gateway.order_counters(reload: true) }).to raise_exception(StraightServer::Gateway::OrderCountersDisabled) 
+      expect( -> { @gateway.increment_order_counter!(:new) }).to raise_exception(StraightServer::Gateway::OrderCountersDisabled) 
+    end
+
+    it "updates gateway's order counters when an associated order status changes" do
+      allow_any_instance_of(StraightServer::Order).to receive(:transaction).and_return({ tid: 'xxx' })
+      allow(@gateway).to receive(:send_callback_http_request)
+      allow(@gateway).to receive(:send_order_to_websocket_client)
+
+      expect(@gateway.order_counters(reload: true)).to eq({ new: 0, unconfirmed: 0, paid: 0, underpaid: 0, overpaid: 0, expired: 0 })
+      order = create(:order, gateway_id: @gateway.id)
+      expect(@gateway.order_counters(reload: true)).to eq({ new: 1, unconfirmed: 0, paid: 0, underpaid: 0, overpaid: 0, expired: 0 })
+      order.status = 2
+      expect(@gateway.order_counters(reload: true)).to eq({ new: 0, unconfirmed: 0, paid: 1, underpaid: 0, overpaid: 0, expired: 0 })
+
+      expect(@gateway.order_counters(reload: true)).to eq({ new: 0, unconfirmed: 0, paid: 1, underpaid: 0, overpaid: 0, expired: 0 })
+      order = create(:order, gateway_id: @gateway.id)
+      expect(@gateway.order_counters(reload: true)).to eq({ new: 1, unconfirmed: 0, paid: 1, underpaid: 0, overpaid: 0, expired: 0 })
+      order.status = 1
+      expect(@gateway.order_counters(reload: true)).to eq({ new: 0, unconfirmed: 1, paid: 1, underpaid: 0, overpaid: 0, expired: 0 })
+      order.status = 5
+      expect(@gateway.order_counters(reload: true)).to eq({ new: 0, unconfirmed: 0, paid: 1, underpaid: 0, overpaid: 0, expired: 1 })
+    end
+
+    it "doesn't increment orders on status update unless the option is turned on (but no exception raised)" do
+      allow(StraightServer::Config).to receive(:count_orders).and_return(false)
+      allow_any_instance_of(StraightServer::Order).to receive(:transaction).and_return({ tid: 'xxx' })
+      allow(@gateway).to receive(:send_callback_http_request)
+      allow(@gateway).to receive(:send_order_to_websocket_client)
+      order = create(:order, gateway_id: @gateway.id)
+      expect(StraightServer::Config.redis[:connection].get("#{StraightServer::Config.redis[:prefix]}:gateway_#{@gateway.id}:new_orders_counter")).to be_nil
     end
 
   end

@@ -21,4 +21,5 @@ group :test do
   gem 'factory_girl'
   gem 'sqlite3'
   gem 'hashie'
+  gem 'redis'
 end

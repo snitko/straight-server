@@ -38,7 +38,8 @@ module StraightServer
       read_config_file
       create_logger
       connect_to_db
-      run_migrations if migrations_pending?
+      run_migrations         if migrations_pending?
+      setup_redis_connection if StraightServer::Config.count_orders
       initialize_routes
     end
 
@@ -186,6 +187,20 @@ module StraightServer
             end
           end
         end
+      end
+
+      # Loads redis gem and sets up key prefixes for order counters
+      # for the current straight environment. 
+      def setup_redis_connection
+        require 'redis'
+        Config.redis = Config.redis.keys_to_sym
+        Config.redis[:connection] = Redis.new(
+          host:     Config.redis[:host],
+          port:     Config.redis[:port],
+          db:       Config.redis[:db],
+          password: Config.redis[:password]
+        )
+        Config.redis[:prefix] ||= "StraightServer:#{Config.environment}"
       end
 
     end

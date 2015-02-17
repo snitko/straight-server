@@ -2,6 +2,21 @@
 # useful when your run many gateways on the same server.
 gateways_source: config
 
+environment: development
+
+# This enabled order counting using Redis. Please see he README file for details.
+# You're gonna need to install redis-server and redis rubygem on your system and provide
+# redis-server connection details below.
+count_orders: false
+
+# Uncomment this if you want to use Gateway's order counters feature
+# It requires redis.
+#redis:
+  #host: localhost
+  #port: 6380
+  #db:       null # change to 1, 2, 3 etc. or leave as is
+  #password: null # if no password is needed, leave as is
+
 gateways:
   default:
     pubkey: xpub-xxx # <- TODO: change this to your BIP32 pubkey

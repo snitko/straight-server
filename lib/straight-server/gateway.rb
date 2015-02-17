@@ -4,6 +4,8 @@ module StraightServer
   # in one of the classes below.
   module GatewayModule
 
+    @@redis = StraightServer::Config.redis[:connection]
+    
     def fetch_transactions_for(address)
       try_adapters(@blockchain_adapters) { |b| b.fetch_transactions_for(address) }
     end
@@ -14,6 +16,17 @@ module StraightServer
     class WebsocketExists            < Exception; end
     class WebsocketForCompletedOrder < Exception; end
     class GatewayInactive            < Exception; end
+    class OrderCountersDisabled      < Exception
+      def message
+        "Please enable order counting in config file! You can do is using the following option:\n\n" +
+        "  count_orders: true\n\n" +
+        "and don't forget to provide Redis connection info by adding this to the config file as well:\n\n" +
+        "  redis:\n" +
+        "    host: localhost\n" +
+        "    port: 6379\n" +
+        "    db:   null\n"
+      end
+    end
 
     CALLBACK_URL_ATTEMPT_TIMEFRAME = 3600 # seconds
 
@@ -121,6 +134,37 @@ module StraightServer
       result
     end
 
+    def order_status_changed(order)
+      statuses = Order::STATUSES.invert
+      if StraightServer::Config.count_orders
+        increment_order_counter!(statuses[order.old_status], -1) if order.old_status
+        increment_order_counter!(statuses[order.status])
+      end
+      super
+    end
+
+    def order_counters(reload: false)
+      return @order_counters if @order_counters && !reload
+      @order_counters = {
+        new:         get_order_counter(:new),
+        unconfirmed: get_order_counter(:unconfirmed),
+        paid:        get_order_counter(:paid),
+        underpaid:   get_order_counter(:underpaid),
+        overpaid:    get_order_counter(:overpaid),
+        expired:     get_order_counter(:expired)
+      }
+    end
+
+    def get_order_counter(counter_name)
+      raise OrderCountersDisabled unless StraightServer::Config.count_orders
+      @@redis.get("#{StraightServer::Config.redis[:prefix]}:gateway_#{id}:#{counter_name}_orders_counter").to_i || 0
+    end
+
+    def increment_order_counter!(counter_name, by=1)
+      raise OrderCountersDisabled unless StraightServer::Config.count_orders
+      @@redis.incrby("#{StraightServer::Config.redis[:prefix]}:gateway_#{id}:#{counter_name}_orders_counter", by)
+    end
+
     private
 
       # Tries to send a callback HTTP request to the resource specified
@@ -163,6 +207,7 @@ module StraightServer
     include GatewayModule
     plugin :timestamps, create: :created_at, update: :updated_at
     plugin :serialization, :marshal, :exchange_rate_adapter_names
+    plugin :serialization, :marshal
 
     def before_create
       super
@@ -254,21 +299,31 @@ module StraightServer
     # Because this is a config based gateway, we only save last_keychain_id
     # and nothing more.
     def save
-      File.open(@last_keychain_id_file, 'w') {|f| f.write(last_keychain_id) }
+      save_last_keychain_id!
     end
 
     # Loads last_keychain_id from a file in the .straight dir.
     # If the file doesn't exist, we create it. Later, whenever an attribute is updated,
     # we save it to the file.
     def load_last_keychain_id!
-      @last_keychain_id_file = StraightServer::Initializer::ConfigDir.path +
-                               "/#{name}_last_keychain_id"
+      @last_keychain_id_file ||= StraightServer::Initializer::ConfigDir.path + "/#{name}_last_keychain_id"
       if File.exists?(@last_keychain_id_file)
         self.last_keychain_id = File.read(@last_keychain_id_file).to_i
       else
         self.last_keychain_id = 0
         save
       end
+    end
+
+    def save_last_keychain_id!
+      @last_keychain_id_file ||= StraightServer::Initializer::ConfigDir.path + "/#{name}_last_keychain_id"
+      File.open(@last_keychain_id_file, 'w') {|f| f.write(last_keychain_id) }
+    end
+
+    # This method is a replacement for the Sequel's model one used in DB version of the gateway
+    # and it finds gateways using the index of @@gateways Array.
+    def self.find_by_id(id)
+      @@gateways[id.to_i-1]
     end
 
     # This will later be used in the #find_by_id. Because we don't use a DB,
@@ -297,13 +352,6 @@ module StraightServer
       gateway.initialize_exchange_rate_adapters
       gateway.load_last_keychain_id!
       @@gateways << gateway
-    end
-    
-
-    # This method is a replacement for the Sequel's model one used in DB version of the gateway
-    # and it finds gateways using the index of @@gateways Array.
-    def self.find_by_id(id)
-      @@gateways[id.to_i-1]
     end
 
   end
