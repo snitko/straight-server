@@ -202,9 +202,40 @@ Querying the blockchain
 -----------------------
 Straight currently uses third-party services, such as Blokchain.info and Helloblock.io to track
 addresses and fetch transaction info. This means, you don't need to install bitcoind and store
-the whole blockchain on your server. If one service is down, it will automatically switch to another one. I will be adding more adapters in the future. It will also be possible to implement a cross check where if one service is lying about a transaction, I can check with another. In the future, I will add bitcoind support too for those who do not trust third-party services.
+the whole blockchain on your server. If one service is down, it will automatically switch to another one.
+I will be adding more adapters in the future. It will also be possible to implement a cross check where if
+one service is lying about a transaction, I can check with another. In the future, I will add bitcoind support
+too for those who do not trust third-party services.
 
-To sum it up, there is nothing in the architecture of this software that says you should rely on third party services to query the blockchain.
+To sum it up, there is nothing in the architecture of this software that says you should rely on third party services
+to query the blockchain.
+
+Counting orders
+---------------
+For easy statistics and reports, it is desirable to know how many orders of each particular status each gateway has.
+For that reason optional order counters are implemented. To enable order counters, you must first install manually *redis-server*
+and then *redis* rubygem.
+
+Then edit your config file and make sure the following options are set:
+
+    environment: development # name your environment here
+    count_orders: true       # enable order counting feature
+
+    redis:
+      host: localhost
+      port: 6379
+      db:       null # change to 1, 2, 3 etc. or leave as is
+      password: null # if no password is needed, leave as is
+
+After restarting the server, you can use `Gateway#order_counters` method which will
+return a hash of all the counters. Here's an example output:
+
+    { new: 132, unconfirmed: 0, paid: 34, underpaid: 1, overpaid: 2, expired: 55 }
+
+The default behaviour is to cache the output, so if you want fresh values, use `reload: true`
+option on this method:
+
+    Gateway#order_counters(reload: true)
 
 Running in production
 ---------------------

@@ -43,3 +43,4 @@ redis:
   host: localhost
   port: 6379
   db:   null
+  password: null
