@@ -44,24 +44,23 @@ RSpec.describe StraightServer::Gateway do
   end
 
   it "updates gateway's order counters when an associated order status changes" do
-    @gateway.load_order_counters!
     allow_any_instance_of(StraightServer::Order).to receive(:transaction).and_return({ tid: 'xxx' })
     allow(@gateway).to receive(:send_callback_http_request)
     allow(@gateway).to receive(:send_order_to_websocket_client)
 
-    expect(@gateway.order_counters).to eq({ new: 0, unconfirmed: 0, paid: 0, underpaid: 0, overpaid: 0, expired: 0 })
+    expect(@gateway.order_counters(reload: true)).to eq({ new: 0, unconfirmed: 0, paid: 0, underpaid: 0, overpaid: 0, expired: 0 })
     order = create(:order, gateway_id: @gateway.id)
-    expect(@gateway.order_counters).to eq({ new: 1, unconfirmed: 0, paid: 0, underpaid: 0, overpaid: 0, expired: 0 })
+    expect(@gateway.order_counters(reload: true)).to eq({ new: 1, unconfirmed: 0, paid: 0, underpaid: 0, overpaid: 0, expired: 0 })
     order.status = 2
-    expect(@gateway.order_counters).to eq({ new: 0, unconfirmed: 0, paid: 1, underpaid: 0, overpaid: 0, expired: 0 })
+    expect(@gateway.order_counters(reload: true)).to eq({ new: 0, unconfirmed: 0, paid: 1, underpaid: 0, overpaid: 0, expired: 0 })
 
-    expect(@gateway.order_counters).to eq({ new: 0, unconfirmed: 0, paid: 1, underpaid: 0, overpaid: 0, expired: 0 })
+    expect(@gateway.order_counters(reload: true)).to eq({ new: 0, unconfirmed: 0, paid: 1, underpaid: 0, overpaid: 0, expired: 0 })
     order = create(:order, gateway_id: @gateway.id)
-    expect(@gateway.order_counters).to eq({ new: 1, unconfirmed: 0, paid: 1, underpaid: 0, overpaid: 0, expired: 0 })
+    expect(@gateway.order_counters(reload: true)).to eq({ new: 1, unconfirmed: 0, paid: 1, underpaid: 0, overpaid: 0, expired: 0 })
     order.status = 1
-    expect(@gateway.order_counters).to eq({ new: 0, unconfirmed: 1, paid: 1, underpaid: 0, overpaid: 0, expired: 0 })
+    expect(@gateway.order_counters(reload: true)).to eq({ new: 0, unconfirmed: 1, paid: 1, underpaid: 0, overpaid: 0, expired: 0 })
     order.status = 5
-    expect(@gateway.order_counters).to eq({ new: 0, unconfirmed: 0, paid: 1, underpaid: 0, overpaid: 0, expired: 1 })
+    expect(@gateway.order_counters(reload: true)).to eq({ new: 0, unconfirmed: 0, paid: 1, underpaid: 0, overpaid: 0, expired: 1 })
   end
 
   context "callback url" do
@@ -116,6 +115,16 @@ RSpec.describe StraightServer::Gateway do
 
   end
 
+  describe "order counters" do
+
+    it "uses 0 for non-existent order counters and increments them" do
+      expect(@gateway.order_counters(reload: true)).to include({ new: 0, unconfirmed: 0, paid: 0, underpaid: 0, overpaid: 0, expired: 0 })
+      @gateway.increment_order_counter!(:new)
+      expect(@gateway.order_counters(reload: true)[:new]).to eq(1)
+    end
+
+  end
+
   describe "config based gateway" do
 
     it "loads all the gateways from the config file and assigns correct attributes" do
@@ -143,16 +152,6 @@ RSpec.describe StraightServer::Gateway do
       expect(@gateway).to receive(:order_for_keychain_id).with(@order_for_keychain_id_args.merge({ keychain_id: 2})).once.and_return(@order_mock)
       @gateway.create_order(amount: 1, signature: hmac_sha256(1, 'secret'), id: 1)
       expect(File.read("#{ENV['HOME']}/.straight/default_last_keychain_id").to_i).to eq(2)
-    end
-
-    it "saves and retrieves info about how many orders of each status there currently are" do
-      @gateway.load_order_counters!
-      expect(@gateway.order_counters).to include({ new: 0, unconfirmed: 0, paid: 0, underpaid: 0, overpaid: 0, expired: 0 })
-      @gateway.order_counters = { new: 1, unconfirmed: 2, paid: 3, underpaid: 4, overpaid: 5, expired: 6 }
-      @gateway.save_order_counters!
-      expect(YAML.load_file(StraightServer::Initializer::ConfigDir.path + "/#{@gateway.name}_order_counters.yml").keys_to_sym).to(
-        eq({ new: 1, unconfirmed: 2, paid: 3, underpaid: 4, overpaid: 5, expired: 6 })
-      )
     end
 
   end
@@ -189,15 +188,6 @@ RSpec.describe StraightServer::Gateway do
       expect(@gateway.send(:encrypt_secret)).to eq("96c1c24edff5c1c2:6THJEZqg+2qlDhtWE2Tytg==")
       expect(@gateway.send(:decrypt_secret)).to eq("secret")
       expect(@gateway.secret).to eq("secret")
-    end
-
-    it "saves an retrieves info about how many orders of each status there currently are" do
-      @gateway.save
-      expect(@gateway.order_counters).to include({ new: 0, unconfirmed: 0, paid: 0, underpaid: 0, overpaid: 0, expired: 0 })
-      @gateway.order_counters = { new: 1, unconfirmed: 2, paid: 3, underpaid: 4, overpaid: 5, expired: 6 }
-      @gateway.save
-      @gateway.reload
-      expect(@gateway.order_counters).to eq({ new: 1, unconfirmed: 2, paid: 3, underpaid: 4, overpaid: 5, expired: 6 })
     end
 
   end

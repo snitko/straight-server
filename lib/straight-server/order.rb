@@ -91,8 +91,7 @@ module StraightServer
     # but the initial :new increment needs this code because the Gateway#order_status_changed 
     # isn't called in this case.
     def after_create
-      self.gateway.increment_order_counter_for_status(:new)
-      self.gateway.save
+      self.gateway.increment_order_counter!(:new)
     end
 
     # Reloads the method in Straight engine. We need to take

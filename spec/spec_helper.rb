@@ -25,6 +25,7 @@ require_relative "../lib/straight-server/utils/hash_string_to_sym_keys"
 include StraightServer::Initializer
 StraightServer::Initializer::ConfigDir.set!
 read_config_file
+setup_redis_connection
 
 # 4. Load the rest of the files, including models, which are now ready
 # to be used as intended and will follow all the previous configuration.
@@ -67,9 +68,12 @@ RSpec.configure do |config|
       g.last_keychain_id = 0
       g.save
     end
-    ["default_order_counters.yml", "second_gateway_order_counters.yml"].each do |f|
-      FileUtils.rm "#{ENV['HOME']}/.straight/#{f}" if File.exists?("#{ENV['HOME']}/.straight/#{f}")
+
+    # Clear Gateway's order counters in Redis
+    Redis.current.keys("#{StraightServer::Config.redis[:prefix]}*").each do |k|
+      Redis.current.del k
     end
+
   end
 
   config.after(:all) do

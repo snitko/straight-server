@@ -246,6 +246,10 @@ It's worth saying that currently, there is no default settings for production, s
 It is you who defines what a production or a staging environment is, by changing the config file. Those words
 are only used as examples. You may call your environment whatever you like.
 
+However, environment name is currently used as a prefix for gateway order counters Redis entries
+(see the respective README section). You can set the current environment name using a config file option, for example:
+
+    environment: development
 
 Addons
 ------

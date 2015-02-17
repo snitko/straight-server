@@ -1,6 +1,8 @@
 # If set to db, then use DB table to store gateways,
 # useful when your run many gateways on the same server.
 gateways_source: config
+environment: test
+count_orders: true
 
 gateways:
 
@@ -36,3 +38,8 @@ gateways:
 db:
   adapter: sqlite
   name: straight.db
+
+redis:
+  host: localhost
+  port: 6379
+  db:   null

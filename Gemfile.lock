@@ -95,6 +95,7 @@ GEM
     rake (10.3.2)
     rdoc (4.1.2)
       json (~> 1.4)
+    redis (3.2.1)
     rspec (3.1.0)
       rspec-core (~> 3.1.0)
       rspec-expectations (~> 3.1.0)
@@ -130,6 +131,7 @@ DEPENDENCIES
   hashie
   jeweler (~> 2.0.1)
   logmaster (= 0.1.5)
+  redis
   rspec
   ruby-hmac
   satoshi-unit

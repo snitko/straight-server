@@ -2,6 +2,9 @@
 # useful when your run many gateways on the same server.
 gateways_source: config
 
+environment: development
+count_orders: false
+
 gateways:
   default:
     pubkey: xpub-xxx # <- TODO: change this to your BIP32 pubkey
@@ -61,3 +64,10 @@ db:
   #password: password
   #host: hostname
   #port: 1234
+
+# Uncomment this if you want to use Gateway's order counters feature
+# It requires redis.
+#redis:
+  #host: localhost
+  #port: 6380
+  #db:   null

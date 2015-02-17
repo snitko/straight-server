@@ -10,7 +10,7 @@ RSpec.describe StraightServer::Order do
     allow(@gateway).to receive(:active).and_return(true)
     allow(@gateway).to receive(:order_status_changed)
     allow(@gateway).to receive(:save)
-    allow(@gateway).to receive(:increment_order_counter_for_status)
+    allow(@gateway).to receive(:increment_order_counter!)
     @order = create(:order, gateway_id: @gateway.id)
     allow(@gateway).to receive(:fetch_transactions_for).with(anything).and_return([])
     allow(@gateway).to receive(:order_status_changed).with(anything)

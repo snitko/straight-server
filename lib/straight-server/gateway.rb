@@ -4,6 +4,8 @@ module StraightServer
   # in one of the classes below.
   module GatewayModule
 
+    @@redis = StraightServer::Config.redis[:connection]
+    
     def fetch_transactions_for(address)
       try_adapters(@blockchain_adapters) { |b| b.fetch_transactions_for(address) }
     end
@@ -123,16 +125,29 @@ module StraightServer
 
     def order_status_changed(order)
       statuses = Order::STATUSES.invert
-      increment_order_counter_for_status(statuses[order.old_status], -1) if order.old_status
-      increment_order_counter_for_status(statuses[order.status])
-      self.save
+      increment_order_counter!(statuses[order.old_status], -1) if order.old_status
+      increment_order_counter!(statuses[order.status])
       super
     end
 
-    def increment_order_counter_for_status(counter_status=:new, value=1)
-      self.order_counters = self.order_counters.merge(
-        { counter_status => self.order_counters[counter_status] + value }
-      )
+    def order_counters(reload: false)
+      return @order_counters if @order_counters && !reload
+      @order_counters = {
+        new:         get_order_counter(:new),
+        unconfirmed: get_order_counter(:unconfirmed),
+        paid:        get_order_counter(:paid),
+        underpaid:   get_order_counter(:underpaid),
+        overpaid:    get_order_counter(:overpaid),
+        expired:     get_order_counter(:expired)
+      }
+    end
+
+    def get_order_counter(counter_name)
+      @@redis.get("#{StraightServer::Config.redis[:prefix]}:gateway_#{id}:#{counter_name}_orders_counter").to_i || 0
+    end
+
+    def increment_order_counter!(counter_name, by=1)
+      @@redis.incrby("#{StraightServer::Config.redis[:prefix]}:gateway_#{id}:#{counter_name}_orders_counter", by)
     end
 
     private
@@ -177,12 +192,11 @@ module StraightServer
     include GatewayModule
     plugin :timestamps, create: :created_at, update: :updated_at
     plugin :serialization, :marshal, :exchange_rate_adapter_names
-    plugin :serialization, :marshal, :order_counters
+    plugin :serialization, :marshal
 
     def before_create
       super
       encrypt_secret
-      self.order_counters = { new: 0, unconfirmed: 0, paid: 0, underpaid: 0, overpaid: 0, expired: 0 }
     end
     
     # We cannot allow to store gateway secret in a DB plaintext, this would be completetly unsecure.
@@ -267,14 +281,10 @@ module StraightServer
     # it will keep checking on the existing ones.
     attr_accessor :active
 
-    # Stores info about how many orders of various types there currently are
-    attr_accessor :order_counters
-
     # Because this is a config based gateway, we only save last_keychain_id
     # and nothing more.
     def save
       save_last_keychain_id!
-      save_order_counters!
     end
 
     # Loads last_keychain_id from a file in the .straight dir.
@@ -299,23 +309,6 @@ module StraightServer
     # and it finds gateways using the index of @@gateways Array.
     def self.find_by_id(id)
       @@gateways[id.to_i-1]
-    end
-
-    def load_order_counters!
-      @order_counters_file ||= StraightServer::Initializer::ConfigDir.path + "/#{name}_order_counters.yml"
-      if File.exists?(@order_counters_file)
-        # Load YAML into hash, convert string keys to symbols in that hash
-        counters = YAML.load_file(@order_counters_file)
-        return self.order_counters = counters.keys_to_sym if counters
-      end
-      self.order_counters = { new: 0, unconfirmed: 0, paid: 0, underpaid: 0, overpaid: 0, expired: 0 }
-    end
-
-    def save_order_counters!
-      @order_counters_file ||= StraightServer::Initializer::ConfigDir.path + "/#{name}_order_counters.yml"
-      File.open(@order_counters_file, 'w') do |f|
-        f.write self.order_counters.to_yaml
-      end
     end
 
     # This will later be used in the #find_by_id. Because we don't use a DB,
@@ -343,7 +336,6 @@ module StraightServer
       gateway.exchange_rate_adapter_names = attrs['exchange_rate_adapters']
       gateway.initialize_exchange_rate_adapters
       gateway.load_last_keychain_id!
-      gateway.load_order_counters!
       @@gateways << gateway
     end
 
