@@ -2,6 +2,8 @@
 require 'fileutils'
 require_relative '../../lib/straight-server/random_string'
 require_relative '../../lib/straight-server/initializer'
+require_relative '../../lib/straight-server/config'
+require_relative '../../lib/straight-server'
 
 RSpec.describe StraightServer::Initializer do
 
@@ -14,6 +16,7 @@ RSpec.describe StraightServer::Initializer do
       include StraightServer::Initializer::ConfigDir
     end
     @test_class_object = StraightServer::TestInitializerClass.new
+    StraightServer::Initializer::ConfigDir.set!
   end
 
   after(:each) do
@@ -22,7 +25,7 @@ RSpec.describe StraightServer::Initializer do
 
   
   it "creates config files" do
-    StraightServer::Initializer::ConfigDir.set!
+
     begin
       @test_class_object.send(:create_config_files)
     rescue Exception => e
@@ -42,6 +45,29 @@ RSpec.describe StraightServer::Initializer do
       end
     end
 
+  end
+
+  it "connects to the database" do
+
+    StraightServer::Config.db = { 
+      adapter: 'sqlite',
+      name: 'straight.db', 
+    }
+    begin
+      @test_class_object.send(:create_config_files)
+    rescue SystemExit => e
+    end
+    @test_class_object.send(:connect_to_db)
+    expect(StraightServer.db_connection.test_connection).to be true
+
+  end
+
+  it "creates logger" do
+    # should return Logger class
+  end
+
+  it "runs migrations" do
+    # expect sec migrator to receive run 
   end
 
   def remove_temp_dir
