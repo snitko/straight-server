@@ -123,6 +123,12 @@ RSpec.describe StraightServer::Gateway do
       expect(@gateway.order_counters(reload: true)[:new]).to eq(1)
     end
 
+    it "raises exception when trying to access counters but the feature is disabled" do
+      allow(StraightServer::Config).to receive(:count_orders).and_return(false)
+      expect( -> { @gateway.order_counters(reload: true) }).to raise_exception(StraightServer::Gateway::OrderCountersDisabled) 
+      expect( -> { @gateway.increment_order_counter!(:new) }).to raise_exception(StraightServer::Gateway::OrderCountersDisabled) 
+    end
+
   end
 
   describe "config based gateway" do

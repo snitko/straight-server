@@ -16,6 +16,17 @@ module StraightServer
     class WebsocketExists            < Exception; end
     class WebsocketForCompletedOrder < Exception; end
     class GatewayInactive            < Exception; end
+    class OrderCountersDisabled      < Exception
+      def message
+        "Please enable order counting in config file! You can do is using the following option:\n\n" +
+        "  count_orders: true\n\n" +
+        "and don't forget to provide Redis connection info by adding this to the config file as well:\n\n" +
+        "  redis:\n" +
+        "    host: localhost\n" +
+        "    port: 6379\n" +
+        "    db:   null\n"
+      end
+    end
 
     CALLBACK_URL_ATTEMPT_TIMEFRAME = 3600 # seconds
 
@@ -143,10 +154,12 @@ module StraightServer
     end
 
     def get_order_counter(counter_name)
+      raise OrderCountersDisabled unless StraightServer::Config.count_orders
       @@redis.get("#{StraightServer::Config.redis[:prefix]}:gateway_#{id}:#{counter_name}_orders_counter").to_i || 0
     end
 
     def increment_order_counter!(counter_name, by=1)
+      raise OrderCountersDisabled unless StraightServer::Config.count_orders
       @@redis.incrby("#{StraightServer::Config.redis[:prefix]}:gateway_#{id}:#{counter_name}_orders_counter", by)
     end
 
