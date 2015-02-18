@@ -10,7 +10,8 @@ module StraightServer
 
         # Determine config dir or set default. Useful when we want to
         # have different settings for production or staging or development environments.
-        def set!
+        def set!(path=nil)
+          @@config_dir = path and return if path
           @@config_dir = ENV['HOME'] + '/.straight'
           ARGV.each do |a|
             if a =~ /\A--config-dir=.+/
