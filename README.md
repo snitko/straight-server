@@ -5,6 +5,8 @@ Straight server
 
 > Website: http://straight.mycelium.com
 
+[![Build Status](https://travis-ci.org/snitko/straight-server.svg)](https://travis-ci.org/snitko/straight-server)
+
 If you'd like to accept Bitcoin payments on your website automatically, but you're not
 fond of services like Coinbase or Bitpay, which hold your bitcoins for you and require a ton
 of AML/KYC info, you came to the right place.
