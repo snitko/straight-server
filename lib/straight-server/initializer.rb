@@ -87,7 +87,7 @@ module StraightServer
     def connect_to_db
 
       # symbolize keys for convenience
-      db_config = StraightServer::Config.db.inject({}){|memo,(k,v)| memo[k.to_sym] = v; memo}
+      db_config = StraightServer::Config.db.keys_to_sym
 
       db_name = if db_config[:adapter] == 'sqlite'
         ConfigDir.path + "/" + db_config[:name]
