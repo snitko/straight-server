@@ -1,6 +1,1 @@
-install:
-  - git clone git://github.com/snitko/straight.git vendor/gems/straight
-  - cd vendor/gems/straight && bundle install && rake build && rake install
-  - cd ../../../
-script:
-  - bundle exec rspec spec
+gemfile: Gemfile.travis
