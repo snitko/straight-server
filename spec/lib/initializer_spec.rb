@@ -7,14 +7,15 @@ require_relative '../../lib/straight-server'
 
 RSpec.describe StraightServer::Initializer do
 
+  class StraightServer::TestInitializerClass
+    include StraightServer::Initializer
+    include StraightServer::Initializer::ConfigDir
+  end
+
   before(:each) do
     remove_temp_dir
     templates_dir = File.expand_path('../../templates', File.dirname(__FILE__))
     ENV['HOME']   = File.expand_path('../temp', File.dirname(__FILE__))
-    class StraightServer::TestInitializerClass
-      include StraightServer::Initializer
-      include StraightServer::Initializer::ConfigDir
-    end
     @test_class_object = StraightServer::TestInitializerClass.new
     StraightServer::Initializer::ConfigDir.set!
   end
@@ -26,7 +27,7 @@ RSpec.describe StraightServer::Initializer do
   
   it "creates config files" do
     begin
-      @test_class_object.send(:create_config_files)
+      @test_class_object.create_config_files
     rescue Exception => e
       expect(e.status).to eq 0 
     end
@@ -68,7 +69,17 @@ RSpec.describe StraightServer::Initializer do
   end
 
   it "runs migrations" do
-    # expect sec migrator to receive run 
+    StraightServer::Config.db = { 
+      adapter: 'sqlite',
+      name: 'straight.db', 
+    }
+    begin
+      @test_class_object.send(:create_config_files)
+    rescue SystemExit => e
+    end
+    @test_class_object.send(:connect_to_db)
+    expect(Sequel::Migrator).to receive(:run).with(any_args)
+    expect( -> { @test_class_object.send(:run_migrations) }).not_to raise_error
   end
 
   def remove_temp_dir
