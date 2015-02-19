@@ -1,0 +1,8 @@
+gemfile: Gemfile.travis
+language: ruby
+rvm:
+  - 2.1.0
+services:
+  - redis-server
+notifications:
+  slack: straight-payments:ovM1xPrG9BmKTHGkM0k42gkP
