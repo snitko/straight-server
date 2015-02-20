@@ -205,6 +205,11 @@ RSpec.describe StraightServer::Gateway do
       expect(@gateway.secret).to eq("secret")
     end
 
+    it "finds orders using #find_by_id method which is essentially an alias for Gateway[]" do
+      @gateway.save
+      expect(StraightServer::GatewayOnDB.find_by_id(@gateway.id)).to eq(@gateway)
+    end
+
   end
 
   describe "handling websockets" do

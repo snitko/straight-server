@@ -225,6 +225,10 @@ module StraightServer
       decrypt_secret
     end
 
+    def self.find_by_id(id)
+      self[id]
+    end
+
     private
 
       def encrypt_secret
