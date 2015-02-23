@@ -225,6 +225,10 @@ module StraightServer
       decrypt_secret
     end
 
+    def self.find_by_id(id)
+      self[id]
+    end
+
     private
 
       def encrypt_secret
@@ -360,7 +364,7 @@ module StraightServer
   # so they can simply start using a single gateway on their machines, a gateway which attributes are defined
   # in a config file instead of a DB. That way they don't need special tools to access the DB and create
   # a gateway, but can simply edit the config file.
-  Gateway = if StraightServer::Config.gateways_source = 'config'
+  Gateway = if StraightServer::Config.gateways_source == 'config'
     GatewayOnConfig
   else
     GatewayOnDB

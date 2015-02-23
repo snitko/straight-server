@@ -5,3 +5,4 @@ pkg
 
 .DS_Store
 .ruby-version
+spec/.straight/straight.db
