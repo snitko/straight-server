@@ -65,7 +65,7 @@ RSpec.describe StraightServer::Initializer do
   end
 
   it "creates logger" do
-    log_configs = StraightServer::Config.logmaster = { 'log_level' => 'WARN', 'file' => 'straight.log' }
+    StraightServer::Config.logmaster = { 'log_level' => 'WARN', 'file' => 'straight.log' }
     create_config_files
     expect(@initializer.create_logger).to be_kind_of(StraightServer::Logger)
   end
