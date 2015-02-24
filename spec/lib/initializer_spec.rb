@@ -105,6 +105,7 @@ RSpec.describe StraightServer::Initializer do
     open(ENV['HOME'] + '/.straight/addons.yml', 'a') { |f| YAML.dump(configuration, f) }
     StraightServer::Config.logmaster = { 'log_level' => 'INFO', 'file' => 'straight.log' }
     @initializer.create_logger
+    expect(StraightServer.logger).to receive(:info).and_return ''
     @initializer.load_addons
     expect(@initializer).to respond_to(:test_addon_method)
   end
