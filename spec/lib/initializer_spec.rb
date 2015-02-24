@@ -81,6 +81,34 @@ RSpec.describe StraightServer::Initializer do
     expect( -> { @initializer.run_migrations }).not_to raise_error
   end
 
+  it "loads addons" do
+    configuration = { 
+      'test_addon' => {
+        'path'   => 'addons/test_addon',
+        'module' => 'TestAddon'  
+      }
+    }
+    module_definition = <<-EOD
+      module StraightServer
+        module Addon
+          module TestAddon
+            def test_addon_method
+            end
+          end
+        end
+      end
+    EOD
+    create_config_files
+    FileUtils.mkdir_p(ENV['HOME'] + '/.straight/addons')
+    FileUtils.touch(ENV['HOME'] + '/.straight/addons/test_addon.rb')
+    open(ENV['HOME'] + '/.straight/addons/test_addon.rb', 'w') { |f| f << module_definition }
+    open(ENV['HOME'] + '/.straight/addons.yml', 'a') { |f| YAML.dump(configuration, f) }
+    StraightServer::Config.logmaster = { 'log_level' => 'INFO', 'file' => 'straight.log' }
+    @initializer.create_logger
+    @initializer.load_addons
+    expect(@initializer).to respond_to(:test_addon_method)
+  end
+
   def remove_tmp_dir
     if Dir.exist?(File.expand_path('../tmp/', File.dirname(__FILE__)))
       FileUtils.rm_r(File.expand_path('../tmp/', File.dirname(__FILE__)))
