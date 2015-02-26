@@ -82,7 +82,7 @@ module StraightServer
     end
 
     def before_create
-      self.payment_id = gateway.sign_with_secret("#{id}#{amount}#{created_at}")
+      self.payment_id = gateway.sign_with_secret("#{keychain_id}#{amount}#{created_at}")
       super
     end
 
