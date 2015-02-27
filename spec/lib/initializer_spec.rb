@@ -70,46 +70,25 @@ RSpec.describe StraightServer::Initializer do
     expect(@initializer.create_logger).to be_kind_of(StraightServer::Logger)
   end
 
-  it "runs migrations" do
-    StraightServer::Config.db = { 
-      adapter: 'sqlite',
-      name: 'straight.db', 
-    }
-    create_config_files
-    @initializer.connect_to_db
-    expect(Sequel::Migrator).to receive(:run).with(any_args)
-    expect( -> { @initializer.run_migrations }).not_to raise_error
-  end
+  it "runs migrations"
 
   it "loads addons" do
-    configuration = { 
-      'test_addon' => {
-        'path'   => 'addons/test_addon',
-        'module' => 'TestAddon'  
-      }
-    }
-    module_definition = <<-EOD
-      module StraightServer
-        module Addon
-          module TestAddon
-            def test_addon_method
-            end
-          end
-        end
-      end
-    EOD
     create_config_files
-    FileUtils.mkdir_p(ENV['HOME'] + '/.straight/addons')
-    FileUtils.touch(ENV['HOME'] + '/.straight/addons/test_addon.rb')
-    open(ENV['HOME'] + '/.straight/addons/test_addon.rb', 'w') { |f| f << module_definition }
-    open(ENV['HOME'] + '/.straight/addons.yml', 'a') { |f| YAML.dump(configuration, f) }
-    StraightServer::Config.logmaster = { 'log_level' => 'INFO', 'file' => 'straight.log' }
-    @initializer.create_logger
-    expect(StraightServer.logger).to receive(:info).and_return ''
+    FileUtils.ln_sf(File.expand_path(File.join(ENV['HOME'], '../fixtures/addons.yml')), File.expand_path(File.join(ENV['HOME'], '../tmp/.straight/addons.yml')))
+    FileUtils.ln_sf(File.expand_path(File.join(ENV['HOME'], '../fixtures')), File.expand_path(File.join(ENV['HOME'], '../tmp/.straight/addons')))
+    disable_logger_noise
     @initializer.load_addons
     expect(@initializer).to respond_to(:test_addon_method)
   end
 
+  # Stubing logger with empty string to remove its noise while test run
+  def disable_logger_noise
+    StraightServer::Config.logmaster = { 'log_level' => 'INFO', 'file' => 'straight.log' }
+    @initializer.create_logger
+    expect(StraightServer.logger).to receive(:info).and_return ''
+  end
+
+  # Cleans up files created by #create_config_files defined in let:
   def remove_tmp_dir
     if Dir.exist?(File.expand_path('../tmp/', File.dirname(__FILE__)))
       FileUtils.rm_r(File.expand_path('../tmp/', File.dirname(__FILE__)))

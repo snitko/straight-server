@@ -1,0 +1,19 @@
+# This is where you put info about your addons.
+#
+# Addons are just modules that extend the StraightServer::Server module.
+# 
+# Addon modules can be both rubygems or files under ~/.straight/addons/.
+# If ~/.straight/addons.yml contains a 'path' key for a particular addon, then it means
+# the addon is placed under the ~/.straight/addons/. If not, it is assumed it is
+# already in the LOAD_PATH somehow, with rubygems for example.
+#
+#
+# Example:
+#
+#   payment_ui:               # <- name doesn't affect anything, just shows up in the log file
+#     path: addons/payment_ui # <- This is unnecessary if addon is already in the LOAD_PATH
+#     module: PaymentUI       # <- actual module should be a submodule of StraightServer::Addon
+
+test_addon:
+  path: 'addons/test_addon'
+  module: 'TestAddon'  
