@@ -5,6 +5,7 @@ module StraightServer
   module GatewayModule
 
     @@redis = StraightServer::Config.redis[:connection]
+    @@websockets = {}
     
     def fetch_transactions_for(address)
       try_adapters(@blockchain_adapters) { |b| b.fetch_transactions_for(address) }
@@ -16,6 +17,11 @@ module StraightServer
     class WebsocketExists            < Exception; end
     class WebsocketForCompletedOrder < Exception; end
     class GatewayInactive            < Exception; end
+    class NoWebsocketsForNewGateway  < Exception
+      def message
+        "You're trying to get access to websockets on a Gateway that hasn't been saved yet"
+      end
+    end
     class OrderCountersDisabled      < Exception
       def message
         "Please enable order counting in config file! You can do is using the following option:\n\n" +
@@ -50,7 +56,7 @@ module StraightServer
 
       @exchange_rate_adapters = []
       @status_check_schedule  = Straight::GatewayModule::DEFAULT_STATUS_CHECK_SCHEDULE
-      @websockets             = {}
+      @@websockets[self.id]   ||= {} if self.id
 
       super
       initialize_exchange_rate_adapters # should always go after super
@@ -64,8 +70,8 @@ module StraightServer
 
       StraightServer.logger.info "Creating new order with attrs: #{attrs}"
       signature = attrs.delete(:signature)
-      raise InvalidOrderId if check_signature && (attrs[:id].nil? || attrs[:id].to_i <= 0)
       if !check_signature || sign_with_secret(attrs[:id]) == signature
+        #raise InvalidOrderId if attrs[:id].nil? || attrs[:id].to_i <= 0
         order = order_for_keychain_id(
           amount:           attrs[:amount],
           keychain_id:      increment_last_keychain_id!,
@@ -96,19 +102,24 @@ module StraightServer
     end
 
     def add_websocket_for_order(ws, order)
-      raise WebsocketExists            unless @websockets[order.id].nil?
+      raise WebsocketExists            unless websockets[order.id].nil?
       raise WebsocketForCompletedOrder unless order.status < 2
       StraightServer.logger.info "Opening ws connection for #{order.id}"
       ws.on(:close) do |event|
-        @websockets.delete(order.id)
+        websockets.delete(order.id)
         StraightServer.logger.info "Closing ws connection for #{order.id}"
       end
-      @websockets[order.id] = ws
+      websockets[order.id] = ws
       ws
     end
 
+    def websockets
+      raise NoWebsocketsForNewGateway unless self.id
+      @@websockets[self.id]
+    end
+
     def send_order_to_websocket_client(order)
-      if ws = @websockets[order.id]
+      if ws = websockets[order.id]
         ws.send(order.to_json)
         ws.close
       end
@@ -208,10 +219,19 @@ module StraightServer
     plugin :timestamps, create: :created_at, update: :updated_at
     plugin :serialization, :marshal, :exchange_rate_adapter_names
     plugin :serialization, :marshal
+    plugin :after_initialize
 
     def before_create
       super
       encrypt_secret
+    end
+
+    def after_create
+      @@websockets[self.id] = {}
+    end
+
+    def after_initialize
+      @@websockets[self.id] ||= {} if self.id
     end
     
     # We cannot allow to store gateway secret in a DB plaintext, this would be completetly unsecure.

@@ -113,7 +113,7 @@ module StraightServer
 
     def time_left_before_expiration(duration: gateway.orders_expiration_period)
       time_passed_after_creation = (Time.now - created_at).to_i
-      @gateway.orders_expiration_period-time_passed_after_creation
+      gateway.orders_expiration_period-time_passed_after_creation
     end
 
   end
