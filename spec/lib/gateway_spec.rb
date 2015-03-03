@@ -26,8 +26,8 @@ RSpec.describe StraightServer::Gateway do
   end
 
   it "doesn't allow nil or empty order id if signature checks are enabled" do
-    expect( -> { @gateway.create_order(amount: 1, signature: 'invalid', id: nil) }).to raise_exception(StraightServer::GatewayModule::InvalidOrderId)
-    expect( -> { @gateway.create_order(amount: 1, signature: 'invalid', id: '') }).to raise_exception(StraightServer::GatewayModule::InvalidOrderId)
+    expect( -> { @gateway.create_order(amount: 1, signature: hmac_sha256(nil, 'secret'), id: nil) }).to raise_exception(StraightServer::GatewayModule::InvalidOrderId)
+    expect( -> { @gateway.create_order(amount: 1, signature: hmac_sha256('', 'secret'), id: '') }).to raise_exception(StraightServer::GatewayModule::InvalidOrderId)
   end
 
   it "sets order amount in satoshis calculated from another currency" do
@@ -215,7 +215,7 @@ RSpec.describe StraightServer::Gateway do
   describe "handling websockets" do
 
     before(:each) do
-      @gateway.instance_variable_set(:@websockets, {})
+      StraightServer::GatewayModule.class_variable_set(:@@websockets, { @gateway.id => {} })
       @ws = double("websocket mock")
       allow(@ws).to receive(:on).with(:close)
       allow(@order_mock).to receive(:id).and_return(1)
@@ -224,7 +224,7 @@ RSpec.describe StraightServer::Gateway do
 
     it "adds a new websocket for the order" do
       @gateway.add_websocket_for_order(@ws, @order_mock)
-      expect(@gateway.instance_variable_get(:@websockets)).to eq({ 1 => @ws})
+      expect(@gateway.websockets).to eq({1 => @ws})
     end
 
     it "sends a message to the websocket when status of the order is changed and closes the connection" do

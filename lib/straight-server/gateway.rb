@@ -56,7 +56,6 @@ module StraightServer
 
       @exchange_rate_adapters = []
       @status_check_schedule  = Straight::GatewayModule::DEFAULT_STATUS_CHECK_SCHEDULE
-      @@websockets[self.id]   ||= {} if self.id
 
       super
       initialize_exchange_rate_adapters # should always go after super
@@ -71,7 +70,7 @@ module StraightServer
       StraightServer.logger.info "Creating new order with attrs: #{attrs}"
       signature = attrs.delete(:signature)
       if !check_signature || sign_with_secret(attrs[:id]) == signature
-        #raise InvalidOrderId if attrs[:id].nil? || attrs[:id].to_i <= 0
+        raise InvalidOrderId if check_signature && (attrs[:id].nil? || attrs[:id].to_i <= 0)
         order = order_for_keychain_id(
           amount:           attrs[:amount],
           keychain_id:      increment_last_keychain_id!,
@@ -375,6 +374,7 @@ module StraightServer
       gateway.exchange_rate_adapter_names = attrs['exchange_rate_adapters']
       gateway.initialize_exchange_rate_adapters
       gateway.load_last_keychain_id!
+      @@websockets[i] = {}
       @@gateways << gateway
     end
 

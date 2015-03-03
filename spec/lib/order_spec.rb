@@ -16,6 +16,12 @@ RSpec.describe StraightServer::Order do
     allow(@gateway).to receive(:order_status_changed).with(anything)
     allow(@gateway).to receive(:sign_with_secret).with(anything).and_return("1", "2", "3")
     allow(StraightServer::Gateway).to receive(:find_by_id).and_return(@gateway)
+
+    websockets = {}
+    StraightServer::GatewayOnConfig.class_variable_get(:@@gateways).each do |g|
+      websockets[g.id] = {}
+    end
+    StraightServer::GatewayModule.class_variable_set(:@@websockets, websockets)
   end
 
   it "prepares data as http params" do

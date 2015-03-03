@@ -89,7 +89,7 @@ RSpec.describe StraightServer::OrdersController do
   describe "websocket action" do
 
     before(:each) do
-      @gateway.instance_variable_set(:@websockets, {})
+      StraightServer::GatewayModule.class_variable_set(:@@websockets, { @gateway.id => {} })
       @ws_mock    = double("websocket mock")
       @order_mock = double("order mock")
       allow(@ws_mock).to receive(:rack_response).and_return("ws rack response")
