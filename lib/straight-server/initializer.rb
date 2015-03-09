@@ -49,7 +49,6 @@ module StraightServer
     end
 
     def create_config_files
-
       FileUtils.mkdir_p(ConfigDir.path) unless File.exist?(ConfigDir.path)
 
       unless File.exist?(ConfigDir.path + '/addons.yml')
