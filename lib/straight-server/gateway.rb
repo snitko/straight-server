@@ -125,11 +125,12 @@ module StraightServer
     end
 
     def initialize_exchange_rate_adapters
+      @exchange_rate_adapters ||= []
       if self.exchange_rate_adapter_names
         self.exchange_rate_adapter_names.each do |adapter|
           begin
-            @exchange_rate_adapters << Kernel.const_get("Straight::ExchangeRate::#{adapter}Adapter").new
-          rescue NameError 
+            @exchange_rate_adapters << Straight::ExchangeRate.const_get("#{adapter}Adapter").new
+          rescue NameError => e 
             raise NameError, "No such adapter exists: Straight::ExchangeRate::#{adapter}Adapter"
           end
         end
@@ -231,6 +232,7 @@ module StraightServer
 
     def after_initialize
       @@websockets[self.id] ||= {} if self.id
+      initialize_exchange_rate_adapters
     end
     
     # We cannot allow to store gateway secret in a DB plaintext, this would be completetly unsecure.

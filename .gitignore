@@ -5,4 +5,6 @@ pkg
 
 .DS_Store
 .ruby-version
+spec/.straight/default_last_keychain_id
+spec/.straight/second_gateway_last_keychain_id
 spec/.straight/straight.db
