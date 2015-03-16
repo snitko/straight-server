@@ -11,6 +11,8 @@ RSpec.describe StraightServer::Order do
     allow(@gateway).to receive(:order_status_changed)
     allow(@gateway).to receive(:save)
     allow(@gateway).to receive(:increment_order_counter!)
+    allow(@gateway).to receive(:current_exchange_rate).and_return(111)
+    allow(@gateway).to receive(:default_currency).and_return('USD')
     @order = create(:order, gateway_id: @gateway.id)
     allow(@gateway).to receive(:fetch_transactions_for).with(anything).and_return([])
     allow(@gateway).to receive(:order_status_changed).with(anything)
@@ -63,6 +65,11 @@ RSpec.describe StraightServer::Order do
   it "doesn't allow to create an order for inactive gateway" do
     allow(@gateway).to receive(:active).and_return(false)
     expect( -> { create(:order, gateway_id: @gateway.id) }).to raise_exception(Sequel::ValidationFailed, "gateway is inactive, cannot create order for inactive gateway")
+  end
+
+  it "adds exchange rate at the moment of purchase to the data hash" do
+    order = create(:order, gateway_id: @gateway.id)
+    expect(order.data[:exchange_rate]).to eq({ price: 111, currency: 'USD' })
   end
 
   describe "DB interaction" do

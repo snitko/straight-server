@@ -83,6 +83,13 @@ module StraightServer
 
     def before_create
       self.payment_id = gateway.sign_with_secret("#{keychain_id}#{amount}#{created_at}")
+
+      # Save info about current exchange rate at the time of purchase
+      unless gateway.default_currency == 'BTC'
+        self.data = {} unless self.data
+        self.data[:exchange_rate] = { price: gateway.current_exchange_rate, currency: gateway.default_currency }
+      end
+      
       super
     end
 
