@@ -21,8 +21,20 @@ else
   host_and_port       = ARGV[2]
 end
 host_and_port ||= (host ? host : 'http://localhost') + (port ? ":#{port}" : ':9697')
-debugger
+
+# Request example
 # Simulate 100 users, 10000 requests example
 # ab -n 10000  -c 100 http://localhost:9000
-# system "bin/straight-server --config-dir=./benchmark -p " + (port ? "#{port}" : ':9697')
+system "bin/straight-server --config-dir=./benchmark -p " + (port ? "#{port}" : ':9697')
 # system "ab -n #{request_qty} -c #{request_concurrency} " + host_and_port
+
+# Create order (POST)
+system "ab -n #{request_qty} -c #{request_concurrency} -p post -T application/x-www-form-urlencoded" + host_and_port + '/gateways/1/orders'
+puts "######################################################################"
+
+# See order info (GET)
+system "ab -n #{request_qty} -c #{request_concurrency} " + host_and_port + '/gateways/1/orders/1'
+puts "######################################################################"
+
+# subscribe to order status changes via a websocket (GET)
+system "ab -n #{request_qty} -c #{request_concurrency} " + host_and_port + '/gateways/1/orders/1/websocket'
