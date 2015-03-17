@@ -29,7 +29,7 @@ system "bin/straight-server --config-dir=./benchmark -p " + (port ? "#{port}" : 
 # system "ab -n #{request_qty} -c #{request_concurrency} " + host_and_port
 
 # Create order (POST)
-system "ab -n #{request_qty} -c #{request_concurrency} -p post -T application/x-www-form-urlencoded" + host_and_port + '/gateways/1/orders'
+system "ab -n #{request_qty} -c #{request_concurrency} -p 'amount=1' -T application/x-www-form-urlencoded" + host_and_port + '/gateways/1/orders'
 puts "######################################################################"
 
 # See order info (GET)
