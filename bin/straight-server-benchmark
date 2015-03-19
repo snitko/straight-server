@@ -1,11 +1,17 @@
 #!/usr/bin/env ruby
+require 'byebug'
 require 'fileutils'
 
 # Request example
 # Simulate 100 users, 10000 requests example (GET)
 # ab -n 10000  -c 100 http://localhost:9000/
 
-benchmark_db_file = File.expand_path('benchmark/straight.db')
+BENCHMARK_DB_FILE = File.expand_path('benchmark/straight.db')
+
+def delete_benchmark_db
+  FileUtils.rm_f(BENCHMARK_DB_FILE) if File.exists?(BENCHMARK_DB_FILE)
+end
+
 
 if ARGV.empty?
   print "Enter quantity of requests: "
@@ -28,21 +34,23 @@ else
 end
 host_and_port ||= (host ? host : 'http://127.0.0.1') + (port ? ":#{port}" : ':9697')
 
-FileUtils.rm_f(benchmark_db_file) if File.exists?(benchmark_db_file)
+delete_benchmark_db
 
+# Launching Straight server with benchmark configuration
 system "#{File.expand_path('bin/straight-server')} --config-dir=./benchmark -p " + (port ? "#{port}" : '9697') + " --daemonize --pid #{File.expand_path('benchmark/straight.pid')}"
+
 # Create order (POST)
-# Kernel.puts system "ab -n #{request_qty} -c #{request_concurrency} -T application/x-www-form-urlencoded " + host_and_port + '/gateways/1/orders?amount=1'
 puts system "ab -n #{request_qty} -c #{request_concurrency} -T application/x-www-form-urlencoded " + host_and_port + '/gateways/1/orders?amount=1'
 puts "######################################################################"
-
 # See order info (GET)
 puts system "ab -n #{request_qty} -c #{request_concurrency} " + host_and_port + '/gateways/1/orders/1'
 puts "######################################################################"
-
 # Subscribe to order status changes via a websocket (GET)
 puts system "ab -n #{request_qty} -c #{request_concurrency} " + host_and_port + '/gateways/1/orders/1/websocket'
 
+
+# killing straight server process
 pid = File.read(File.expand_path('benchmark/straight.pid'))
 system "kill #{pid}"
-FileUtils.rm_f(benchmark_db_file) if File.exists?(benchmark_db_file)
+
+delete_benchmark_db
