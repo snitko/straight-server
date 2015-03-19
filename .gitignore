@@ -10,3 +10,4 @@ spec/.straight/second_gateway_last_keychain_id
 spec/.straight/straight.db
 
 benchmark/straight.db
+bin/goliath.log*
