@@ -1,5 +1,4 @@
 #!/usr/bin/env ruby
-require 'byebug'
 require 'fileutils'
 
 # Request example
