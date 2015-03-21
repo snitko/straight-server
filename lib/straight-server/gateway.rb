@@ -50,8 +50,7 @@ module StraightServer
       ]
 
       @blockchain_adapters = [
-        Straight::Blockchain::BlockchainInfoAdapter.mainnet_adapter,
-        Straight::Blockchain::HelloblockIoAdapter.mainnet_adapter
+        Straight::Blockchain::BlockchainInfoAdapter.mainnet_adapter
       ]
 
       @exchange_rate_adapters = []
