@@ -1,0 +1,78 @@
+# If set to db, then use DB table to store gateways,
+# useful when your run many gateways on the same server.
+gateways_source: config
+
+environment: development
+
+# This enabled order counting using Redis. Please see he README file for details.
+# You're gonna need to install redis-server and redis rubygem on your system and provide
+# redis-server connection details below.
+count_orders: false
+
+# Uncomment this if you want to use Gateway's order counters feature
+# It requires redis.
+#redis:
+  #host: localhost
+  #port: 6380
+  #db:       null # change to 1, 2, 3 etc. or leave as is
+  #password: null # if no password is needed, leave as is
+
+gateways:
+  default:
+    pubkey: xpub6AHA9hZDN11k2ijHMeS5QqHx2KP9aMBRhTDqANMnwVtdyw2TDYRmF8PjpvwUFcL1Et8Hj59S3gTSMcUQ5gAqTz3Wd8EsMTmF3DChhqPQBnU # <- TODO: change this to your BIP32 pubkey
+    confirmations_required: 0
+    order_class: "StraightServer::Order"
+    secret: 'secret'
+    check_signature: false
+    callback_url: 'http://localhost:3000/my_app/payment_callback'
+    default_currency: 'BTC'
+    orders_expiration_period: 600 # seconds
+
+    # This options decides whether we should also check the DB for status updates first
+    # when we check order status. That is, if we're tracking an order and this option
+    # is set to true, it first fetches the fields from the local DB, sees if the status has changed there,
+    # and if it did - we no longer need to query the blockchain.
+    #
+    # Usecase? Currently mostly debugging (so set it to false for production). For example,
+    # when testing payments, you don't actually want to pay, you can just run the server console,
+    # change order status in the DB and see how your client picks it up, showing you that your
+    # order has been paid for.
+    check_order_status_in_db_first: true # Consider changing to `false` in production.
+
+    # The order matters here, we check for prices with the first adapter,
+    # if it fails, move on to the next
+    exchange_rate_adapters:
+      - Bitpay
+      - Coinbase
+      - Bitstamp
+
+    # This affects whether it is possible to create a new order with the gateway.
+    # If it's set to false, then it won't be possible to create a new order, but
+    # it will keep checking on the existing ones.
+    active: true
+
+logmaster:
+  log_level: INFO # Wise to change to WARN for production
+  file: straight.log
+  raise_exception: false 
+  name: Straight server logger
+
+  # These options bellow send you email whenever a FATAL error occurs.
+  # You probably want to uncomment them for production. See https://github.com/snitko/logmaste
+  # for various email options.
+  #
+  #email_config:
+    #to: 'me@email.foo'
+    #from: "logmaster@yourapp.com"
+
+db:
+  adapter: sqlite
+  name: straight.db # file is always located in ~/.straight
+
+  # No need to set these options for sqlite,
+  # but other DBs may require them.
+  #
+  #user: username
+  #password: password
+  #host: hostname
+  #port: 1234

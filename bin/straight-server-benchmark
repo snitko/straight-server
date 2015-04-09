@@ -1,0 +1,28 @@
+#!/usr/bin/env ruby
+require 'byebug'
+
+if ARGV.empty?
+  print "Enter quantity of requests: "
+  request_qty = gets.strip.to_i
+  
+  print "Enter concurrency of the requests: "
+  request_concurrency = gets.strip.to_i
+  
+  print "Enter PORT: "
+  port = gets.strip.to_s
+  port = port.empty? ? nil : port
+  
+  print "Enter HOST: "
+  host = gets.strip.to_s
+  host = host.empty? ? nil : host
+else
+  request_qty         = ARGV[0] 
+  request_concurrency = ARGV[1]
+  host_and_port       = ARGV[2]
+end
+host_and_port ||= (host ? host : 'http://localhost') + (port ? ":#{port}" : ':9697')
+debugger
+# Simulate 100 users, 10000 requests example
+# ab -n 10000  -c 100 http://localhost:9000
+# system "bin/straight-server --config-dir=./benchmark -p " + (port ? "#{port}" : ':9697')
+# system "ab -n #{request_qty} -c #{request_concurrency} " + host_and_port
