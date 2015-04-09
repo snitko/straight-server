@@ -19,7 +19,7 @@ count_orders: false
 
 gateways:
   default:
-    pubkey: xpub6AHA9hZDN11k2ijHMeS5QqHx2KP9aMBRhTDqANMnwVtdyw2TDYRmF8PjpvwUFcL1Et8Hj59S3gTSMcUQ5gAqTz3Wd8EsMTmF3DChhqPQBnU # <- TODO: change this to your BIP32 pubkey
+    pubkey: xpub6AHA9hZDN11k2ijHMeS5QqHx2KP9aMBRhTDqANMnwVtdyw2TDYRmF8PjpvwUFcL1Et8Hj59S3gTSMcUQ5gAqTz3Wd8EsMTmF3DChhqPQBnU
     confirmations_required: 0
     order_class: "StraightServer::Order"
     secret: 'secret'

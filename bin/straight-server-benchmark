@@ -1,5 +1,21 @@
 #!/usr/bin/env ruby
-require 'byebug'
+require 'fileutils'
+
+# Request example
+# Simulate 100 users, 10000 requests example (GET)
+# ab -n 10000  -c 100 http://localhost:9000/
+
+BENCHMARK_DB_FILE = File.expand_path('benchmark/straight.db')
+
+def delete_benchmark_db
+  FileUtils.rm_f(BENCHMARK_DB_FILE) if File.exists?(BENCHMARK_DB_FILE)
+end
+
+def delete_log_files
+  logs_to_delete = Dir[File.expand_path('benchmark') + "/*.log*"] +
+                   Dir[File.expand_path('bin') + "/*.log*"]
+  logs_to_delete.each { |f| FileUtils.rm_f(f) } unless logs_to_delete.empty?
+end
 
 if ARGV.empty?
   print "Enter quantity of requests: "
@@ -20,9 +36,33 @@ else
   request_concurrency = ARGV[1]
   host_and_port       = ARGV[2]
 end
-host_and_port ||= (host ? host : 'http://localhost') + (port ? ":#{port}" : ':9697')
-debugger
-# Simulate 100 users, 10000 requests example
-# ab -n 10000  -c 100 http://localhost:9000
-# system "bin/straight-server --config-dir=./benchmark -p " + (port ? "#{port}" : ':9697')
-# system "ab -n #{request_qty} -c #{request_concurrency} " + host_and_port
+host_and_port ||= (host ? host : 'http://127.0.0.1') + (port ? ":#{port}" : ':9697')
+
+delete_benchmark_db
+delete_log_files
+
+# Launching Straight server with benchmark configuration
+system "#{File.expand_path('bin/straight-server')} --config-dir=./benchmark -p " + (port ? "#{port}" : '9697') + " --daemonize --pid #{File.expand_path('benchmark/straight.pid')}"
+
+# Create order:   POST /gateways/1/orders
+puts "\n\n########## Create order:   POST /gateways/1/orders #####################################" +
+     "###############################################################################"
+puts system "ab -n #{request_qty} -c #{request_concurrency} -T application/x-www-form-urlencoded " + host_and_port + '/gateways/1/orders?amount=1'
+
+# See order info: GET /gateways/1/orders/1
+puts "\n\n########## See order info: GET /gateways/1/orders/1 #####################################" +
+     "##############################################################################"
+puts system "ab -n #{request_qty} -c #{request_concurrency} " + host_and_port + '/gateways/1/orders/1'
+
+# Subscribe to order status changes via a websocket: GET /gateways/1/orders/1/websocket
+puts "\n\n########## Subscribe to order status changes via a websocket: GET /gateways/1/orders/1/websocket ##################" +
+     "##############################################################################"
+puts system "ab -n #{request_qty} -c #{request_concurrency} " + host_and_port + '/gateways/1/orders/1/websocket'
+
+
+# killing straight server process
+pid = File.read(File.expand_path('benchmark/straight.pid'))
+system "kill #{pid}"
+
+delete_benchmark_db
+delete_log_files

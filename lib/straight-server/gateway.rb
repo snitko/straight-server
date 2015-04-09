@@ -4,7 +4,8 @@ module StraightServer
   # in one of the classes below.
   module GatewayModule
 
-    @@redis = StraightServer::Config.redis[:connection]
+    # Temporary fix for straight server benchmarking
+    @@redis = StraightServer::Config.redis[:connection] if StraightServer::Config.redis
     @@websockets = {}
     
     def fetch_transactions_for(address)
