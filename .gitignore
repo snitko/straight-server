@@ -11,5 +11,3 @@ spec/.straight/straight.db
 
 benchmark/straight.db
 benchmark/default_last_keychain_id
-benchmark/straight.log*
-bin/goliath.log*
