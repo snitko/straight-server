@@ -13,6 +13,12 @@ module StraightServer
     end
 
     def create
+      
+      unless @gateway
+        StraightServer.logger.warn "Gateway not found"
+        return [404, {}, "Gateway not found" ]
+      end
+
       begin
         order = @gateway.create_order(
           amount:           @params['amount'], # this is satoshi
