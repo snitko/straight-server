@@ -76,7 +76,7 @@ module StraightServer
         StraightServer.logger.blank_lines
         StraightServer.logger.info "#{@method} #{@env['REQUEST_PATH']}\n#{@params}"
 
-        @gateway = StraightServer::Gateway.find_by_id(@request_path[1])
+        @gateway = StraightServer::Gateway.find_by_hashed_id(@request_path[1])
 
         @response = if @request_path[3] # if an order id is supplied
           @params['id'] = @request_path[3]

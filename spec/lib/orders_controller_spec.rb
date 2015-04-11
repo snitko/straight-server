@@ -45,6 +45,11 @@ RSpec.describe StraightServer::OrdersController do
       expect(response[2]).to eq("The gateway is inactive, you cannot create order with it")
     end
 
+    it "finds gateway using hashed_id" do
+      allow(StraightServer::Thread).to receive(:new)
+      send_request "POST", "/gateways/#{@gateway.id}/orders", amount: 10
+    end
+
   end
 
   describe "show action" do
