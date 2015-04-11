@@ -221,6 +221,10 @@ module StraightServer
     plugin :serialization, :marshal
     plugin :after_initialize
 
+    def self.find_by_hashed_id(s)
+      self.where(hashed_id: s).first
+    end
+
     def before_create
       super
       encrypt_secret
@@ -228,6 +232,7 @@ module StraightServer
 
     def after_create
       @@websockets[self.id] = {}
+      update(hashed_id: OpenSSL::HMAC.digest('sha256', Config.server_secret, self.id.to_s).unpack("H*").first)
     end
 
     def after_initialize
@@ -320,6 +325,10 @@ module StraightServer
     # If it's set to false, then it won't be possible to create a new order, but
     # it will keep checking on the existing ones.
     attr_accessor :active
+
+    def self.find_by_hashed_id(s)
+      self.find_by_id(s)
+    end
 
     # Because this is a config based gateway, we only save last_keychain_id
     # and nothing more.

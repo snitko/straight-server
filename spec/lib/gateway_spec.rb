@@ -168,6 +168,10 @@ RSpec.describe StraightServer::Gateway do
       @gateway.create_order(amount: 1, signature: hmac_sha256(1, 'secret'), id: 1)
       expect(File.read("#{ENV['HOME']}/.straight/default_last_keychain_id").to_i).to eq(2)
     end
+    
+    it "searches for Gateway using regular ids when find_by_hashed_id method is called" do
+      expect(StraightServer::GatewayOnConfig.find_by_hashed_id(1)).not_to be_nil
+    end
 
   end
 
@@ -208,6 +212,13 @@ RSpec.describe StraightServer::Gateway do
     it "finds orders using #find_by_id method which is essentially an alias for Gateway[]" do
       @gateway.save
       expect(StraightServer::GatewayOnDB.find_by_id(@gateway.id)).to eq(@gateway)
+    end
+
+    it "assigns hashed_id to gateway and then finds gateway using that value" do
+      @gateway.save
+      hashed_id = hmac_sha256(@gateway.id, 'global server secret')
+      expect(@gateway.hashed_id).to eq(hashed_id)
+      expect(StraightServer::GatewayOnDB.find_by_hashed_id(hashed_id)).to eq(@gateway)
     end
 
   end
