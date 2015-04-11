@@ -138,7 +138,8 @@ To create an order for the new gateway, simply send this request:
 Notice that the gateway id has changed to 2. Gateway ids are assigned according to the order in
 which they follow in the config file.
 
-** Gateways from DB **
+Gateways from DB
+----------------
 When you have too many gateways, it is unwise to keep them in the config file. In that case,
 you can store gateway settings in the DB. To do that, change `~/.straight/config.yml` setting
 'gateways_source: config` to `gateways_source: db`.
@@ -149,14 +150,34 @@ there is no standard way to manage gateways through a web interface. In the futu
 In general, it shouldn't be difficult, and may look like this:
 
     $ straight-console
-
-    > g = Gateway.new
+    
+    > gateway = Gateway.new
     > gateway.pubkey                 = 'xpub1234'
     > gateway.confirmations_required = 0
     > gateway.order_class            = 'StraightServer::Order'
     > gateway.callback_url           = 'http://myapp.com/payment_callback'
     > gateway.save
     > exit
+
+One important thing to remember when using DB based Gateways is that when you want to issue a request to
+create a new order, you must use `Gateway#hashed_id` instead of `#id`. This is because otherwise it becomes very easy
+for a third-party to just go through gateways consecutively.
+
+For example, suppose you have a DB based gateway with id 23. The incorrect request to create a new order would be
+
+    POST /gateways/23/orders?amount=1 # THIS IS WRONG!
+
+We first need to find that gateway's hashed id:
+
+    $ straight-console
+    
+    > gateway = Gateway[23]
+    > gateway.hashed_id # => '587bb9b74e37f526eac47081ad61998726673760c77415d52a95bf38fba9cbe9'
+
+And then we can make a correct request:
+
+    POST /gateways/587bb9b74e37f526eac47081ad61998726673760c77415d52a95bf38fba9cbe9/orders?amount=1
+    
 
 Using signatures
 ----------------
