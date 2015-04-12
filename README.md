@@ -177,6 +177,7 @@ We first need to find that gateway's hashed id:
 And then we can make a correct request:
 
     POST /gateways/587bb9b74e37f526eac47081ad61998726673760c77415d52a95bf38fba9cbe9/orders?amount=1
+
 Using signatures
 ----------------
 If you are running straight-server on a machine separate from your online stores, you
