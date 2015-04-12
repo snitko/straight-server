@@ -171,7 +171,7 @@ module StraightServer
             order.status(reload: true)
 
             # if we still see no transactions to that address,
-            # consider the order truy expired and update the status accordingly
+            # consider the order truly expired and update the status accordingly
             order.status = StraightServer::Order::STATUSES[:expired] if order.status < 2
 
             order.save

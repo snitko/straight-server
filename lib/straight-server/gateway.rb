@@ -37,8 +37,37 @@ module StraightServer
 
     CALLBACK_URL_ATTEMPT_TIMEFRAME = 3600 # seconds
 
+
+    ############# Initializers methods ########################################################
+    # We have separate methods, because with GatewayOnDB they are called from #after_initialize
+    # but in GatewayOnConfig they are called from #initialize intself.
+    # #########################################################################################
+    #
     def initialize(*attrs)
-      
+      @status_check_schedule  = Straight::GatewayModule::DEFAULT_STATUS_CHECK_SCHEDULE
+      super
+    end
+
+    def initialize_exchange_rate_adapters
+      @exchange_rate_adapters ||= []
+      if self.exchange_rate_adapter_names
+        self.exchange_rate_adapter_names.each do |adapter|
+          begin
+            @exchange_rate_adapters << Straight::ExchangeRate.const_get("#{adapter}Adapter").new
+          rescue NameError => e 
+            raise NameError, "No such adapter exists: Straight::ExchangeRate::#{adapter}Adapter"
+          end
+        end
+      end
+    end
+
+    def initialize_blockchain_adapters
+      @blockchain_adapters = [
+        Straight::Blockchain::BlockchainInfoAdapter.mainnet_adapter
+      ]
+    end
+
+    def initialize_callbacks
       # When the status of an order changes, we send an http request to the callback_url
       # and also notify a websocket client (if present, of course).
       @order_callbacks = [
@@ -49,17 +78,10 @@ module StraightServer
           end
         end
       ]
-
-      @blockchain_adapters = [
-        Straight::Blockchain::BlockchainInfoAdapter.mainnet_adapter
-      ]
-
-      @exchange_rate_adapters = []
-      @status_check_schedule  = Straight::GatewayModule::DEFAULT_STATUS_CHECK_SCHEDULE
-
-      super
-      initialize_exchange_rate_adapters # should always go after super
     end
+    #
+    ############# END OF Initializers methods ##################################################
+ 
     
     # Creates a new order and saves into the DB. Checks if the MD5 hash
     # is correct first.
@@ -121,19 +143,6 @@ module StraightServer
       if ws = websockets[order.id]
         ws.send(order.to_json)
         ws.close
-      end
-    end
-
-    def initialize_exchange_rate_adapters
-      @exchange_rate_adapters ||= []
-      if self.exchange_rate_adapter_names
-        self.exchange_rate_adapter_names.each do |adapter|
-          begin
-            @exchange_rate_adapters << Straight::ExchangeRate.const_get("#{adapter}Adapter").new
-          rescue NameError => e 
-            raise NameError, "No such adapter exists: Straight::ExchangeRate::#{adapter}Adapter"
-          end
-        end
       end
     end
 
@@ -237,7 +246,9 @@ module StraightServer
 
     def after_initialize
       @@websockets[self.id] ||= {} if self.id
+      initialize_callbacks
       initialize_exchange_rate_adapters
+      initialize_blockchain_adapters
     end
     
     # We cannot allow to store gateway secret in a DB plaintext, this would be completetly unsecure.
@@ -328,6 +339,12 @@ module StraightServer
 
     def self.find_by_hashed_id(s)
       self.find_by_id(s)
+    end
+
+    def initialize
+      initialize_callbacks
+      initialize_exchange_rate_adapters
+      initialize_blockchain_adapters
     end
 
     # Because this is a config based gateway, we only save last_keychain_id
