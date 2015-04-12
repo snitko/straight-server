@@ -56,7 +56,13 @@ module StraightServer
     end
 
     def websocket
-      order = Order[@params['id']] || (@params['id'] =~ /[^\d]+/ && Order[:payment_id => @params['id']])
+      
+      order = if @params['id'] =~ /[^\d]+/
+        Order[:payment_id => @params['id']]
+      else
+        Order[@params['id']]
+      end
+
       if order
         begin
           @gateway.add_websocket_for_order ws = Faye::WebSocket.new(@env), order
