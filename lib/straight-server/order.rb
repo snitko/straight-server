@@ -10,7 +10,6 @@ module StraightServer
     serialize_attributes :marshal, :callback_response
     serialize_attributes :marshal, :data
 
-
     plugin :after_initialize
     def after_initialize
       @status = self[:status] || 0
@@ -106,7 +105,7 @@ module StraightServer
     # an order that is already expired. Or, if it's not expired yet,
     # we make sure to stop all checks as soon as it expires, but not later.
     def start_periodic_status_check(duration: gateway.orders_expiration_period)
-      StraightServer.logger.info "Starting periodic status checks of the order #{self.id}"
+      StraightServer.logger.info "Starting periodic status checks of order #{self.id}"
       if (t = time_left_before_expiration) > 0
         check_status_on_schedule(duration: t)
       end

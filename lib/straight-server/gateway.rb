@@ -43,11 +43,6 @@ module StraightServer
     # but in GatewayOnConfig they are called from #initialize intself.
     # #########################################################################################
     #
-    def initialize(*attrs)
-      @status_check_schedule  = Straight::GatewayModule::DEFAULT_STATUS_CHECK_SCHEDULE
-      super
-    end
-
     def initialize_exchange_rate_adapters
       @exchange_rate_adapters ||= []
       if self.exchange_rate_adapter_names
@@ -78,6 +73,10 @@ module StraightServer
           end
         end
       ]
+    end
+
+    def initialize_status_check_schedule
+      @status_check_schedule = Straight::GatewayModule::DEFAULT_STATUS_CHECK_SCHEDULE
     end
     #
     ############# END OF Initializers methods ##################################################
@@ -245,10 +244,12 @@ module StraightServer
     end
 
     def after_initialize
+      @status_check_schedule = Straight::GatewayModule::DEFAULT_STATUS_CHECK_SCHEDULE
       @@websockets[self.id] ||= {} if self.id
       initialize_callbacks
       initialize_exchange_rate_adapters
       initialize_blockchain_adapters
+      initialize_status_check_schedule
     end
     
     # We cannot allow to store gateway secret in a DB plaintext, this would be completetly unsecure.
@@ -344,6 +345,7 @@ module StraightServer
       initialize_callbacks
       initialize_exchange_rate_adapters
       initialize_blockchain_adapters
+      initialize_status_check_schedule
     end
 
     # Because this is a config based gateway, we only save last_keychain_id
