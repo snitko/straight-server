@@ -402,7 +402,7 @@ module StraightServer
       gateway.load_last_keychain_id!
       @@websockets[i] = {}
       @@gateways << gateway
-    end
+    end if StraightServer::Config.gateways
 
   end
 
