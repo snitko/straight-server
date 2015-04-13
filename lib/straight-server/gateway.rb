@@ -330,7 +330,6 @@ module StraightServer
 
     attr_accessor :exchange_rate_adapter_names
     attr_accessor :orders_expiration_period
-    attr_accessor :check_order_status_in_db_first
    
     # This affects whether it is possible to create a new order with the gateway.
     # If it's set to false, then it won't be possible to create a new order, but
@@ -395,7 +394,6 @@ module StraightServer
       gateway.callback_url                   = attrs['callback_url']
       gateway.default_currency               = attrs['default_currency']
       gateway.orders_expiration_period       = attrs['orders_expiration_period']
-      gateway.check_order_status_in_db_first = attrs['check_order_status_in_db_first']
       gateway.active                         = attrs['active']
       gateway.name                     = name
       gateway.id                       = i

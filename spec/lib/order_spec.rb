@@ -46,7 +46,7 @@ RSpec.describe StraightServer::Order do
 
   it "checks DB for a status update first if the respective option for the gateway is turned on" do
     allow(@order).to receive(:transaction).and_raise("Shouldn't ever be happening!")
-    @order.gateway.check_order_status_in_db_first = true
+    StraightServer::Config.check_order_status_in_db_first = true
     StraightServer::Order.where(id: @order.id).update(status: 2)
     allow(@order.gateway).to receive(:order_status_changed)
     expect(@order.status(reload: false)).to eq(0)

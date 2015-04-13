@@ -40,14 +40,14 @@ module StraightServer
     # client picks it up, showing you that your order has been paid for.
     #
     # If you want the feature described above on,
-    # set Gateway#check_order_status_in_db_first to true
+    # set StraightServer::Config.check_order_status_in_db_first to true
     def status(as_sym: false, reload: false)
-      if reload && gateway.check_order_status_in_db_first
+      if reload && StraightServer::Config.check_order_status_in_db_first
         @old_status = self.status
         self.refresh
         unless self[:status] == @old_status
           @status         = self[:status]
-          @status_changed = true 
+          @status_changed = true
           self.gateway.order_status_changed(self)
         end
       end
