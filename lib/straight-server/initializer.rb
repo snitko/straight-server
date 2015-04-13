@@ -167,16 +167,14 @@ module StraightServer
         # an unclean shutdown of the server. Let's check and update the status manually once.
         if order.time_left_before_expiration < 1
           StraightServer.logger.info "Order #{order.id} seems to be expired, but status remains #{order.status}. Will check for status update manually."
-          StraightServer::Thread.new do
-            order.status(reload: true)
+          order.status(reload: true)
 
-            # if we still see no transactions to that address,
-            # consider the order truly expired and update the status accordingly
-            order.status = StraightServer::Order::STATUSES[:expired] if order.status < 2
+          # if we still see no transactions to that address,
+          # consider the order truly expired and update the status accordingly
+          order.status = StraightServer::Order::STATUSES[:expired] if order.status < 2
+          order.save
+          StraightServer.logger.info "Order #{order.id} status updated, new status is #{order.status}"
 
-            order.save
-            StraightServer.logger.info "Order #{order.id} status updated, new status is #{order.status}"
-          end
         # Order is NOT expired and status is < 2. Let's keep tracking it.
         else
           StraightServer.logger.info "Resuming tracking of order #{order.id}, current status is #{order.status}, time before expiration: #{order.time_left_before_expiration} seconds."
