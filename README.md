@@ -1,9 +1,14 @@
 Straight server
 ===============
-> A stand-alone Bitcoin payment gateway server
+> A stand-alone Bitcoin payment gateway server.
 > Receives bitcoin payments directly into your wallet, holds no private keys
+>
+> It is used as a backend for the hosted service http://gear.mycelium.com
+> Instead of installing the gateway yourself, you can just use
+> Mycelium Gear and accept payments through it. Of course, straight
+> into your wallet again - no private key required.
 
-> Website: http://straight.mycelium.com
+> Website: http://gear.mycelium.com
 
 [![Build Status](https://travis-ci.org/snitko/straight-server.svg)](https://travis-ci.org/snitko/straight-server)
 
