@@ -73,7 +73,7 @@ module StraightServer
           begin
             Kernel.const_get(a)
           rescue NameError
-            StraightServer.logger.warn("No blockchain adapter with the name #{a} was found!")
+            puts "WARNING: No blockchain adapter with the name #{a} was found!"
             nil
           end
         end
