@@ -55,9 +55,9 @@ module StraightServer
       if self.exchange_rate_adapter_names
         self.exchange_rate_adapter_names.each do |adapter|
           begin
-            @exchange_rate_adapters << Straight::ExchangeRate.const_get("#{adapter}Adapter").new
+            @exchange_rate_adapters << Straight::ExchangeRate.const_get("#{adapter}Adapter").instance
           rescue NameError => e 
-            raise NameError, "No such adapter exists: Straight::ExchangeRate::#{adapter}Adapter"
+            puts "WARNING: No exchange rate adapter with the name #{a} was found!"
           end
         end
       end
