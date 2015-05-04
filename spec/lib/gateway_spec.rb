@@ -43,6 +43,10 @@ RSpec.describe StraightServer::Gateway do
     @gateway.active = true
   end
 
+  it "loads blockchain adapters according to the config file" do
+    expect(@gateway.blockchain_adapters.map(&:class)).to eq([Straight::Blockchain::BlockchainInfoAdapter, Straight::Blockchain::MyceliumAdapter])
+  end
+
   context "callback url" do
 
     before(:each) do

@@ -18,6 +18,13 @@ module StraightServer
     class WebsocketExists            < Exception; end
     class WebsocketForCompletedOrder < Exception; end
     class GatewayInactive            < Exception; end
+    class NoBlockchainAdapters       < Exception
+      def message
+        "No blockchain adapters were found! StraightServer cannot query the blockchain.\n" +
+        "Check your ~/.straight/config.yml file and make sure valid blockchain adapters\n" +
+        "are present."
+      end
+    end
     class NoWebsocketsForNewGateway  < Exception
       def message
         "You're trying to get access to websockets on a Gateway that hasn't been saved yet"
@@ -57,9 +64,23 @@ module StraightServer
     end
 
     def initialize_blockchain_adapters
-      @blockchain_adapters = [
-        Straight::Blockchain::BlockchainInfoAdapter.mainnet_adapter
-      ]
+      @blockchain_adapters = []
+      StraightServer::Config.blockchain_adapters.each do |a|
+
+        adapter = begin
+          Straight::Blockchain.const_get("#{a}Adapter")
+        rescue NameError
+          begin
+            Kernel.const_get(a)
+          rescue NameError
+            StraightServer.logger.warn("No blockchain adapter with the name #{a} was found!")
+            nil
+          end
+        end
+
+        @blockchain_adapters << adapter.mainnet_adapter if adapter
+      end
+      raise NoBlockchainAdapters if @blockchain_adapters.empty?
     end
 
     def initialize_callbacks

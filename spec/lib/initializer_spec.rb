@@ -54,6 +54,12 @@ RSpec.describe StraightServer::Initializer do
     end
   end
 
+  it "reads config" do
+    create_config_files
+    @initializer.read_config_file
+    expect(StraightServer::Config.blockchain_adapters).to eq(["BlockchainInfo", "Mycelium"])
+  end
+
   it "connects to the database" do
     StraightServer::Config.db = { 
       adapter: 'sqlite',

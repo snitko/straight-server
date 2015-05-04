@@ -35,6 +35,10 @@ gateways:
       - Bitstamp
     active: true
 
+blockchain_adapters:
+  - BlockchainInfo
+  - Mycelium
+
 db:
   adapter: sqlite
   name: straight.db

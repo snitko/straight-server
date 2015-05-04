@@ -1,0 +1,6 @@
+[10084:INFO] 2015-04-16 04:12:10 :: Starting server on 0.0.0.0:9696 in development mode. Watch out for stones.
+[10084:INFO] 2015-04-16 04:12:21 :: Status: 200, Content-Length: 963, Response Time: 24.10ms
+[10084:INFO] 2015-04-16 04:12:21 :: Status: 200, Content-Length: 366, Response Time: 3.11ms
+[10084:INFO] 2015-04-16 04:12:26 :: Status: 200, Content-Length: 963, Response Time: 2.73ms
+[10084:INFO] 2015-04-16 04:12:26 :: Status: 200, Content-Length: 366, Response Time: 3.25ms
+[10084:INFO] 2015-04-16 04:12:40 :: Status: 500, Content-Length: 99, Response Time: 3.67ms

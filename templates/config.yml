@@ -51,6 +51,15 @@ gateways:
     # it will keep checking on the existing ones.
     active: true
 
+# These adapters are used to query the blockchain. If the first one fails, the second one is tried and
+# so on. The adapters are generally looked up as subclasses of Straight::Blockchain::Adapter
+# but you are free to create your own and put a fully qualified class name below. The order is,
+# of course, important.
+blockchain_adapters:
+  - BlockchainInfo # uses Straight::Blockchain::BlockchainInfoAdapter
+  - Mycelium       # uses Straight::Blockchain::MyceliumAdapter
+  # - MyCustomClass::MyCustomBlockchainAdapter
+
 logmaster:
   log_level: INFO # Wise to change to WARN for production
   file: straight.log
