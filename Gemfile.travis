@@ -7,6 +7,7 @@ gem "faye-websocket"
 gem "sequel"
 gem "logmaster", '0.1.5'
 gem "ruby-hmac"
+gem "httparty"
 
 # Add dependencies to develop your gem here.
 # Include everything needed to run rake, tests, features, etc.
