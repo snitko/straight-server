@@ -136,6 +136,7 @@ DEPENDENCIES
   github_api (= 0.11.3)
   goliath
   hashie
+  httparty
   jeweler (~> 2.0.1)
   logmaster (= 0.1.5)
   redis
