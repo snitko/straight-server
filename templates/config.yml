@@ -9,6 +9,13 @@ environment: development
 # redis-server connection details below.
 count_orders: false
 
+# When you display a payment window to a user, he has some time to pay. But what if a
+# transaction has been made in the last seconds and Straight didn't have time to detect it?
+# This just adds a little bit more time to each expiration period.
+# So technically, you can tell your customer he's got 900 seconds to pay, yet wait additional
+# 30 seconds (default value) to be able to detect a late transaction 
+expiration_overtime: 30
+
 # Uncomment this if you want to use Gateway's order counters feature
 # It requires redis.
 #redis:
