@@ -30,7 +30,12 @@ module StraightServer
         }
         order = @gateway.create_order(order_data)
         StraightServer::Thread.new do
-          order.start_periodic_status_check
+          # Because this is a new thread, we have to wrap the code inside in #watch_exceptions
+          # once again. Otherwise, not watching is done. Oh, threads!
+          StraightServer.logger.watch_exceptions do
+            raise "hahaha, error"
+            order.start_periodic_status_check
+          end
         end
         [200, {}, order.to_json ]
       rescue Sequel::ValidationFailed => e
