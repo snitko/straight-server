@@ -20,20 +20,25 @@ module StraightServer
       end
 
       begin
-        order = @gateway.create_order(
+        order_data = {
           amount:           @params['amount'], # this is satoshi
           currency:         @params['currency'],
           btc_denomination: @params['btc_denomination'],
           id:               @params['order_id'],
           signature:        @params['signature'],
           data:             @params['data']
-        )
+        }
+        order = @gateway.create_order(order_data)
         StraightServer::Thread.new do
           order.start_periodic_status_check
         end
         [200, {}, order.to_json ]
       rescue Sequel::ValidationFailed => e
-        StraightServer.logger.warn "validation errors in order, cannot create it."
+        StraightServer.logger.warn(
+          "VALIDATION ERRORS in order, cannot create it:\n" +
+          "#{e.message.split(",").each_with_index.map { |e,i| "#{i+1}. #{e.lstrip}"}.join("\n") }\n" + 
+          "Order data: #{order_data.inspect}\n"
+        )
         [409, {}, "Invalid order: #{e.message}" ]
       rescue StraightServer::GatewayModule::InvalidSignature
         [409, {}, "Invalid signature for id: #{@params['order_id']}" ]
