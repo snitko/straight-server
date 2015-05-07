@@ -33,7 +33,6 @@ module StraightServer
           # Because this is a new thread, we have to wrap the code inside in #watch_exceptions
           # once again. Otherwise, not watching is done. Oh, threads!
           StraightServer.logger.watch_exceptions do
-            raise "hahaha, error"
             order.start_periodic_status_check
           end
         end

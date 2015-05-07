@@ -21,7 +21,7 @@ RSpec.describe StraightServer::OrdersController do
     it "renders 409 error when an order cannot be created due to some validation errors" do
       send_request "POST", '/gateways/2/orders', amount: 0
       expect(response[0]).to eq(409)
-      expect(response[2]).to eq("Invalid order: amount is invalid")
+      expect(response[2]).to eq("Invalid order: amount should be more than 0")
     end
 
     it "starts tracking the order status in a separate thread" do
