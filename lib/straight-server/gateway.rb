@@ -9,7 +9,7 @@ module StraightServer
     @@websockets = {}
     
     def fetch_transactions_for(address)
-      try_adapters(@blockchain_adapters) { |b| b.fetch_transactions_for(address) }
+      try_adapters(@blockchain_adapters, type: 'blockchain') { |b| b.fetch_transactions_for(address) }
     end
 
     class InvalidSignature           < Exception; end
@@ -52,7 +52,7 @@ module StraightServer
     #
     def initialize_exchange_rate_adapters
       @exchange_rate_adapters ||= []
-      if self.exchange_rate_adapter_names
+      if self.exchange_rate_adapter_names.kind_of?(Array) && self.exchange_rate_adapter_names
         self.exchange_rate_adapter_names.each do |adapter|
           begin
             @exchange_rate_adapters << Straight::ExchangeRate.const_get("#{adapter}Adapter").instance
