@@ -56,6 +56,12 @@ module StraightServer
     end
 
     def show
+
+      unless @gateway
+        StraightServer.logger.warn "Gateway not found"
+        return [404, {}, "Gateway not found" ]
+      end
+
       order = Order[@params['id']] || (@params['id'] =~ /[^\d]+/ && Order[:payment_id => @params['id']])
       if order
         order.status(reload: true)
