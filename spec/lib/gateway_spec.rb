@@ -14,7 +14,7 @@ RSpec.describe StraightServer::Gateway do
     @gateway.last_keychain_id = 0
     expect( -> { @gateway.create_order(amount: 1, signature: 'invalid', id: 1) }).to raise_exception(StraightServer::GatewayModule::InvalidSignature)
     expect(@gateway).to receive(:order_for_keychain_id).with(@order_for_keychain_id_args).once.and_return(@order_mock)
-    @gateway.create_order(amount: 1, signature: hmac_sha256(1, 'secret'), id: 1)
+    @gateway.create_order(amount: 1, signature: hmac_sha256(1, 'secret'), keychain_id: 1)
   end
 
   it "checks md5 signature only if that setting is set ON for a particular gateway" do
@@ -164,12 +164,13 @@ RSpec.describe StraightServer::Gateway do
     end
 
     it "saves and retrieves last_keychain_id from the file in the .straight dir" do
+      @gateway.check_signature = false
       expect(File.read("#{ENV['HOME']}/.straight/default_last_keychain_id").to_i).to eq(0)
       @gateway.increment_last_keychain_id!
       expect(File.read("#{ENV['HOME']}/.straight/default_last_keychain_id").to_i).to eq(1)
 
       expect(@gateway).to receive(:order_for_keychain_id).with(@order_for_keychain_id_args.merge({ keychain_id: 2})).once.and_return(@order_mock)
-      @gateway.create_order(amount: 1, signature: hmac_sha256(1, 'secret'), id: 1)
+      @gateway.create_order(amount: 1)
       expect(File.read("#{ENV['HOME']}/.straight/default_last_keychain_id").to_i).to eq(2)
     end
     
@@ -197,13 +198,14 @@ RSpec.describe StraightServer::Gateway do
     end
     
     it "saves and retrieves last_keychain_id from the db" do
+      @gateway.check_signature = false
       @gateway.save
       expect(DB[:gateways][:name => 'default'][:last_keychain_id]).to eq(0)
       @gateway.increment_last_keychain_id!
       expect(DB[:gateways][:name => 'default'][:last_keychain_id]).to eq(1)
 
       expect(@gateway).to receive(:order_for_keychain_id).with(@order_for_keychain_id_args.merge({ keychain_id: 2})).once.and_return(@order_mock)
-      @gateway.create_order(amount: 1, signature: hmac_sha256(1, 'secret'), id: 1)
+      @gateway.create_order(amount: 1)
       expect(DB[:gateways][:name => 'default'][:last_keychain_id]).to eq(2)
     end
 

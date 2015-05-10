@@ -24,7 +24,7 @@ module StraightServer
           amount:           @params['amount'], # this is satoshi
           currency:         @params['currency'],
           btc_denomination: @params['btc_denomination'],
-          id:               @params['order_id'],
+          keychain_id:      @params['order_id'],
           signature:        @params['signature'],
           data:             @params['data']
         }

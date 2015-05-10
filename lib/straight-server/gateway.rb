@@ -111,11 +111,11 @@ module StraightServer
 
       StraightServer.logger.info "Creating new order with attrs: #{attrs}"
       signature = attrs.delete(:signature)
-      if !check_signature || sign_with_secret(attrs[:id]) == signature
-        raise InvalidOrderId if check_signature && (attrs[:id].nil? || attrs[:id].to_i <= 0)
+      if !check_signature || sign_with_secret(attrs[:keychain_id]) == signature
+        raise InvalidOrderId if check_signature && (attrs[:keychain_id].nil? || attrs[:keychain_id].to_i <= 0)
         order = order_for_keychain_id(
           amount:           attrs[:amount],
-          keychain_id:      increment_last_keychain_id!,
+          keychain_id:      attrs[:keychain_id] || increment_last_keychain_id!,
           currency:         attrs[:currency],
           btc_denomination: attrs[:btc_denomination]
         )
