@@ -62,7 +62,8 @@ module StraightServer
         return [404, {}, "Gateway not found" ]
       end
 
-      order = Order[@params['id']] || (@params['id'] =~ /[^\d]+/ && Order[:payment_id => @params['id']])
+      order = find_order
+
       if order
         order.status(reload: true)
         order.save if order.status_changed?
@@ -72,12 +73,7 @@ module StraightServer
 
     def websocket
       
-      order = if @params['id'] =~ /[^\d]+/
-        Order[:payment_id => @params['id']]
-      else
-        Order[@params['id']]
-      end
-
+      order = find_order
       if order
         begin
           @gateway.add_websocket_for_order ws = Faye::WebSocket.new(@env), order
@@ -111,6 +107,14 @@ module StraightServer
           create
         end
         @response = [404, {}, "#{@method} /#{@request_path.join('/')} Not found"] if @response.nil? 
+      end
+
+      def find_order
+        if @params['id'] =~ /[^\d]+/
+          Order[:payment_id => @params['id']]
+        else
+          Order[@params['id']]
+        end
       end
 
   end

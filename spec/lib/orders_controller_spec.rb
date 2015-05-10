@@ -83,7 +83,6 @@ RSpec.describe StraightServer::OrdersController do
 
     it "finds order by payment_id" do
       allow(@order_mock).to receive(:status_changed?).and_return(false)
-      expect(StraightServer::Order).to receive(:[]).with('payment_id').and_return(nil)
       expect(StraightServer::Order).to receive(:[]).with(:payment_id => 'payment_id').and_return(@order_mock)
       send_request "GET", '/gateways/2/orders/payment_id'
       expect(response).to eq([200, {}, "order json mock"])
