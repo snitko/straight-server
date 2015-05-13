@@ -113,6 +113,14 @@ module StraightServer
       signature = attrs.delete(:signature)
       if !check_signature || sign_with_secret(attrs[:keychain_id]) == signature
         raise InvalidOrderId if check_signature && (attrs[:keychain_id].nil? || attrs[:keychain_id].to_i <= 0)
+
+        # If we decide to reuse the order, we simply need to supply the
+        # keychain_id that was used in the order we're reusing.
+        # The address will be generated correctly.
+        if reused_order = find_reusable_order
+          attrs[:keychain_id] = reused_order.keychain_id 
+        end
+
         order = order_for_keychain_id(
           amount:           attrs[:amount],
           keychain_id:      attrs[:keychain_id] || increment_last_keychain_id!,
@@ -122,6 +130,7 @@ module StraightServer
         order.id         = attrs[:id].to_i if attrs[:id]
         order.data       = attrs[:data]    if attrs[:data]
         order.gateway    = self
+        order.reused     = reused_order.reused + 1 if reused_order
         order.save
         self.save
         StraightServer.logger.info "Order #{order.id} created: #{order.to_h}"

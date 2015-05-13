@@ -9,7 +9,7 @@ reuse_address_orders_threshold: 5
 gateways:
 
   default:
-    pubkey: 'xpub-000'
+    pubkey: 'xpub6Arp6y5VVQzq3LWTHz7gGsGKAdM697RwpWgauxmyCybncqoAYim6P63AasNKSy3VUAYXFj7tN2FZ9CM9W7yTfmerdtAPU4amuSNjEKyDeo6'
     confirmations_required: 0
     order_class: "StraightServer::Order"
     secret: 'secret'
@@ -23,7 +23,7 @@ gateways:
       - Bitstamp
     active: true
   second_gateway:
-    pubkey: 'xpub-001'
+    pubkey: 'xpub6AH1Ymkkrwk3TaMrVrXBCpcGajKc9a1dAJBTKr1i4GwYLgLk7WDvPtN1o1cAqS5DZ9CYzn3gZtT7BHEP4Qpsz24UELTncPY1Zsscsm3ajmX'
     confirmations_required: 0
     order_class: "StraightServer::Order"
     secret: 'secret'

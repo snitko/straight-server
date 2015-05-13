@@ -52,6 +52,7 @@ RSpec.describe StraightServer::Gateway do
     # Config.reuse_address_orders_threshold for the test env is 5
     
     before(:each) do
+      @gateway = StraightServer::GatewayOnConfig.find_by_id(2)
       allow(@gateway).to receive(:order_status_changed).with(anything).and_return([])
       allow(@gateway).to receive(:fetch_transactions_for).with(anything).and_return([])
       create_list(:order, 4, status: StraightServer::Order::STATUSES[:expired], gateway_id: @gateway.id)
@@ -73,6 +74,14 @@ RSpec.describe StraightServer::Gateway do
     it "picks an expired order which address is going to be reused only when this address received no transactions" do
       allow(@gateway).to receive(:fetch_transactions_for).with(@expired_orders_1.last.address).and_return(['transaction'])
       expect(@gateway.find_reusable_order).to eq(nil)
+    end
+
+    it "creates a new order with a reused address" do
+      reused_order = @expired_orders_1.last
+      order        = @gateway.create_order(amount: 2252.706, currency: 'USD')
+      expect(order.keychain_id).to eq(reused_order.keychain_id)
+      expect(order.address).to     eq(@gateway.address_for_keychain_id(reused_order.keychain_id)) 
+      expect(order.reused).to      eq(1)
     end
 
   end
