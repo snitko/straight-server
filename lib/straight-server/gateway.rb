@@ -205,6 +205,15 @@ module StraightServer
       @@redis.incrby("#{StraightServer::Config.redis[:prefix]}:gateway_#{id}:#{counter_name}_orders_counter", by)
     end
 
+    def find_reusable_order
+      expired_orders = find_expired_orders_row
+      if expired_orders.size >= Config.reuse_address_orders_threshold &&
+      fetch_transactions_for(expired_orders.last.address).empty?
+        return expired_orders.last
+      end
+      nil
+    end
+
     private
 
       # Tries to send a callback HTTP request to the resource specified

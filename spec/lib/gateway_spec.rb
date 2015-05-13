@@ -54,17 +54,25 @@ RSpec.describe StraightServer::Gateway do
     before(:each) do
       allow(@gateway).to receive(:order_status_changed).with(anything).and_return([])
       allow(@gateway).to receive(:fetch_transactions_for).with(anything).and_return([])
+      create_list(:order, 4, status: StraightServer::Order::STATUSES[:expired], gateway_id: @gateway.id)
+      create_list(:order, 2, status: StraightServer::Order::STATUSES[:paid],    gateway_id: @gateway.id)
+      @expired_orders_1 = create_list(:order, 5, status: StraightServer::Order::STATUSES[:expired], gateway_id: @gateway.id)
+      @expired_orders_2 = create_list(:order, 2, status: StraightServer::Order::STATUSES[:expired], gateway_id: @gateway.id)
     end
 
     it "finds all expired orders that follow in a row" do
-      create_list(:order, 4, status: StraightServer::Order::STATUSES[:expired], gateway_id: @gateway.id)
-      create_list(:order, 2, status: StraightServer::Order::STATUSES[:paid],    gateway_id: @gateway.id)
-      expired_orders_1 = create_list(:order, 5, status: StraightServer::Order::STATUSES[:expired], gateway_id: @gateway.id)
-      expired_orders_2 = create_list(:order, 2, status: StraightServer::Order::STATUSES[:expired], gateway_id: @gateway.id)
-
       expect(@gateway.send(:find_expired_orders_row).size).to eq(5)
-      expect(@gateway.send(:find_expired_orders_row)).to     include(*expired_orders_1)
-      expect(@gateway.send(:find_expired_orders_row)).not_to include(*expired_orders_2)
+      expect(@gateway.send(:find_expired_orders_row)).to     include(*@expired_orders_1)
+      expect(@gateway.send(:find_expired_orders_row)).not_to include(*@expired_orders_2)
+    end
+
+    it "picks an expired order which address is going to be reused" do
+      expect(@gateway.find_reusable_order).to eq(@expired_orders_1.last)
+    end
+     
+    it "picks an expired order which address is going to be reused only when this address received no transactions" do
+      allow(@gateway).to receive(:fetch_transactions_for).with(@expired_orders_1.last.address).and_return(['transaction'])
+      expect(@gateway.find_reusable_order).to eq(nil)
     end
 
   end
