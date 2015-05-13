@@ -50,6 +50,11 @@ RSpec.describe StraightServer::OrdersController do
       send_request "POST", "/gateways/#{@gateway.id}/orders", amount: 10
     end
 
+    it "warns about a deprecated order_id param" do
+      send_request "POST", "/gateways/#{@gateway.id}/orders", amount: 10, order_id: 1
+      expect(response[2]).to eq("Error: order_id is no longer a valid param. Use keychain_id instead and consult the documentation.")
+    end
+
   end
 
   describe "show action" do

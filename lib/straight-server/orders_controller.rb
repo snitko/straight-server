@@ -20,11 +20,18 @@ module StraightServer
       end
 
       begin
+  
+        # This is to inform users of previous version of a deprecated param
+        # It will have to be removed at some point.
+        if @params['order_id'] 
+          return [409, {}, "Error: order_id is no longer a valid param. Use keychain_id instead and consult the documentation." ]
+        end
+
         order_data = {
           amount:           @params['amount'], # this is satoshi
           currency:         @params['currency'],
           btc_denomination: @params['btc_denomination'],
-          keychain_id:      @params['order_id'],
+          keychain_id:      @params['keychain_id'],
           signature:        @params['signature'],
           data:             @params['data']
         }
