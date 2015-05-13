@@ -13,6 +13,7 @@ RSpec.describe StraightServer::Order do
     allow(@gateway).to receive(:increment_order_counter!)
     allow(@gateway).to receive(:current_exchange_rate).and_return(111)
     allow(@gateway).to receive(:default_currency).and_return('USD')
+    allow(@gateway).to receive(:last_keychain_id).and_return(222)
     @order = create(:order, gateway_id: @gateway.id)
     allow(@gateway).to receive(:fetch_transactions_for).with(anything).and_return([])
     allow(@gateway).to receive(:order_status_changed).with(anything)
@@ -72,6 +73,11 @@ RSpec.describe StraightServer::Order do
     expect(order.data[:exchange_rate]).to eq({ price: 111, currency: 'USD' })
   end
 
+  it "returns last_keychain_id for the gateway along with other order data" do
+    order = create(:order, gateway_id: @gateway.id)
+    expect(order.to_h).to include(keychain_id: order.keychain_id, last_keychain_id: @gateway.last_keychain_id) 
+  end
+
   describe "DB interaction" do
 
     it "saves a new order into the database" do
@@ -109,17 +115,6 @@ RSpec.describe StraightServer::Order do
       it "doesn't save order if the order with the same id exists" do
         order = create(:order, gateway_id: @gateway.id)
         expect( -> { create(:order, id: order.id, gateway_id: @gateway.id) }).to raise_error()
-      end
-
-      it "doesn't save order if the order with the same address exists" do
-        order = create(:order, gateway_id: @gateway.id)
-        expect( -> { create(:order, address: order.address) }).to raise_error()
-      end
-
-      it "doesn't save order if the order with the same keychain_id and gateway_id exists" do
-        order = create(:order, gateway_id: @gateway.id)
-        expect( -> { create(:order, keychain_id: order.id, gateway_id: order.gateway_id+1) }).not_to raise_error()
-        expect( -> { create(:order, keychain_id: order.id, gateway_id: order.gateway_id)   }).to     raise_error()
       end
 
       it "doesn't save order if the amount is invalid" do

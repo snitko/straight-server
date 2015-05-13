@@ -15,7 +15,7 @@ RSpec.describe StraightServer::OrdersController do
     it "creates an order and renders its attrs in json" do
       allow(StraightServer::Thread).to receive(:new) # ignore periodic status checks, we're not testing it here
       send_request "POST", '/gateways/2/orders', amount: 10
-      expect(response).to render_json_with(status: 0, amount: 10, address: "address1", tid: nil, id: :anything)
+      expect(response).to render_json_with(status: 0, amount: 10, address: "address1", tid: nil, id: :anything, keychain_id: @gateway.last_keychain_id, last_keychain_id: @gateway.last_keychain_id)
     end
 
     it "renders 409 error when an order cannot be created due to some validation errors" do
