@@ -78,7 +78,7 @@ module StraightServer
     end
 
     def to_http_params
-      "order_id=#{id}&amount=#{amount}&status=#{status}&address=#{address}&tid=#{tid}"
+      "order_id=#{id}&amount=#{amount}&status=#{status}&address=#{address}&tid=#{tid}&keychain_id=#{keychain_id}&last_keychain_id=#{@gateway.last_keychain_id}"
     end
 
     def before_create
