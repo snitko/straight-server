@@ -6,6 +6,7 @@ RSpec.describe StraightServer::Gateway do
     @gateway = StraightServer::GatewayOnConfig.find_by_id(1)
     @order_mock = double("order mock")
     allow(@order_mock).to receive(:old_status)
+    allow(@order_mock).to receive(:reused).and_return(0)
     [:id, :gateway=, :save, :to_h, :id=].each { |m| allow(@order_mock).to receive(m) }
     @order_for_keychain_id_args = { amount: 1, keychain_id: 1, currency: nil, btc_denomination: nil }
   end
@@ -47,7 +48,15 @@ RSpec.describe StraightServer::Gateway do
     expect(@gateway.blockchain_adapters.map(&:class)).to eq([Straight::Blockchain::BlockchainInfoAdapter, Straight::Blockchain::MyceliumAdapter])
   end
 
-  context "reusing addreses" do
+  it "updates last_keychain_id to the new value provided in keychain_id if it's larger than the last_keychain_id" do
+    @gateway.create_order(amount: 2252.706, currency: 'USD', signature: hmac_sha256('100', 'secret'), keychain_id: 100)
+    expect(@gateway.last_keychain_id).to eq(100) 
+    @gateway.create_order(amount: 2252.706, currency: 'USD', signature: hmac_sha256('150', 'secret'), keychain_id: 150)
+    expect(@gateway.last_keychain_id).to eq(150) 
+    @gateway.create_order(amount: 2252.706, currency: 'USD', signature: hmac_sha256('50', 'secret'), keychain_id: 50)
+  end
+
+  context "reusing addresses" do
 
     # Config.reuse_address_orders_threshold for the test env is 5
     
@@ -82,6 +91,17 @@ RSpec.describe StraightServer::Gateway do
       expect(order.keychain_id).to eq(reused_order.keychain_id)
       expect(order.address).to     eq(@gateway.address_for_keychain_id(reused_order.keychain_id)) 
       expect(order.reused).to      eq(1)
+    end
+
+    it "doesn't increment last_keychain_id if order is reused" do
+      last_keychain_id = @gateway.last_keychain_id
+      order = @gateway.create_order(amount: 2252.706, currency: 'USD')
+      expect(@gateway.last_keychain_id).to eq(last_keychain_id) 
+
+      order.status = StraightServer::Order::STATUSES[:paid]
+      order.save
+      order_2 = @gateway.create_order(amount: 2252.706, currency: 'USD')
+      expect(@gateway.last_keychain_id).to eq(last_keychain_id+1) 
     end
 
   end
@@ -191,12 +211,12 @@ RSpec.describe StraightServer::Gateway do
       expect(gateway1).to be_kind_of(StraightServer::GatewayOnConfig)
       expect(gateway2).to be_kind_of(StraightServer::GatewayOnConfig)
 
-      expect(gateway1.pubkey).to eq('xpub-000') 
+      expect(gateway1.pubkey).to eq('xpub6Arp6y5VVQzq3LWTHz7gGsGKAdM697RwpWgauxmyCybncqoAYim6P63AasNKSy3VUAYXFj7tN2FZ9CM9W7yTfmerdtAPU4amuSNjEKyDeo6') 
       expect(gateway1.confirmations_required).to eq(0) 
       expect(gateway1.order_class).to eq("StraightServer::Order") 
       expect(gateway1.name).to eq("default") 
 
-      expect(gateway2.pubkey).to eq('xpub-001') 
+      expect(gateway2.pubkey).to eq('xpub6AH1Ymkkrwk3TaMrVrXBCpcGajKc9a1dAJBTKr1i4GwYLgLk7WDvPtN1o1cAqS5DZ9CYzn3gZtT7BHEP4Qpsz24UELTncPY1Zsscsm3ajmX') 
       expect(gateway2.confirmations_required).to eq(0) 
       expect(gateway2.order_class).to eq("StraightServer::Order") 
       expect(gateway2.name).to eq("second_gateway") 
@@ -205,7 +225,8 @@ RSpec.describe StraightServer::Gateway do
     it "saves and retrieves last_keychain_id from the file in the .straight dir" do
       @gateway.check_signature = false
       expect(File.read("#{ENV['HOME']}/.straight/default_last_keychain_id").to_i).to eq(0)
-      @gateway.increment_last_keychain_id!
+      @gateway.update_last_keychain_id
+      @gateway.save
       expect(File.read("#{ENV['HOME']}/.straight/default_last_keychain_id").to_i).to eq(1)
 
       expect(@gateway).to receive(:order_for_keychain_id).with(@order_for_keychain_id_args.merge({ keychain_id: 2})).once.and_return(@order_mock)
@@ -240,7 +261,8 @@ RSpec.describe StraightServer::Gateway do
       @gateway.check_signature = false
       @gateway.save
       expect(DB[:gateways][:name => 'default'][:last_keychain_id]).to eq(0)
-      @gateway.increment_last_keychain_id!
+      @gateway.update_last_keychain_id
+      @gateway.save
       expect(DB[:gateways][:name => 'default'][:last_keychain_id]).to eq(1)
 
       expect(@gateway).to receive(:order_for_keychain_id).with(@order_for_keychain_id_args.merge({ keychain_id: 2})).once.and_return(@order_mock)

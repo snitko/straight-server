@@ -123,7 +123,7 @@ module StraightServer
 
         order = order_for_keychain_id(
           amount:           attrs[:amount],
-          keychain_id:      attrs[:keychain_id] || increment_last_keychain_id!,
+          keychain_id:      attrs[:keychain_id] || self.last_keychain_id+1,
           currency:         attrs[:currency],
           btc_denomination: attrs[:btc_denomination]
         )
@@ -132,6 +132,8 @@ module StraightServer
         order.gateway    = self
         order.reused     = reused_order.reused + 1 if reused_order
         order.save
+
+        self.update_last_keychain_id(attrs[:keychain_id]) unless order.reused > 0
         self.save
         StraightServer.logger.info "Order #{order.id} created: #{order.to_h}"
         order
@@ -141,14 +143,9 @@ module StraightServer
       end
     end
 
-    # Used to track the current keychain_id number, which is used by
-    # Straight::Gateway to generate addresses from the pubkey. The number is supposed
-    # to be incremented by 1. In the case of a Config file type of Gateway, the value
-    # is stored in a file in the .straight directory.
-    def increment_last_keychain_id!
-      self.last_keychain_id += 1
-      self.save
-      self.last_keychain_id
+    def update_last_keychain_id(new_value=nil)
+      #new_value = nil if new_value && new_value.empty?
+      new_value ? self.last_keychain_id = new_value : self.last_keychain_id += 1
     end
 
     def add_websocket_for_order(ws, order)
