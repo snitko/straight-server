@@ -214,6 +214,16 @@ module StraightServer
       @@redis.incrby("#{StraightServer::Config.redis[:prefix]}:gateway_#{id}:#{counter_name}_orders_counter", by)
     end
 
+    # If we have more than Config.reuse_address_orders_threshold i a row for this gateway,
+    # this method returns the one which keychain_id (and, consequently, address) is to be reused.
+    # It also checks (just in case) if any transactions has been made to the addres-to-be-reused,
+    # because even though the order itself might be expired, the address might have been used for
+    # something else.
+    #
+    # If there were transactions to it, there's actually no need to reuse the address and we can
+    # safely return nil.
+    #
+    # Also, see comments for #find_expired_orders_row method.
     def find_reusable_order
       expired_orders = find_expired_orders_row
       if expired_orders.size >= Config.reuse_address_orders_threshold &&
@@ -257,6 +267,27 @@ module StraightServer
       end
 
 
+      # Wallets that support BIP32 do a limited address lookup. If you have 20 empty addresses in a row
+      # (actually not 20, but Config.reuse_address_orders_threshold, 20 is the default value) it won't
+      # look past it and if an order is generated with the 21st address and Bitcoins are paid there,
+      # the wallet may not detect it. Thus we need to always check for the number of expired orders
+      # in a row and reuse an address.
+      #
+      # This method takes care of the first part of that equation: finds the row of expired orders.
+      # It works like this:
+      #
+      # 1. Finds 20 last orders
+      # 2. Checks if they form a row of expired orders, that is if there is no non-expired non-new orders
+      # in the array:
+      #
+      #   if YES (all orders in the row are indeed expired)
+      #     a) Try the next 20 until we find that one non-expired, non-new order
+      #     b) Put all orders in an array, then slice it so only the oldest 20 are there
+      #     c) return 20 oldest expired orders
+      #
+      #   if NO (some orders are paid)
+      #     Return the row of expired orders - which is not enough to trigger a reuse
+      #     (the triger is in the #find_reusable_order method, which calls this one).
       def find_expired_orders_row
         
         orders = []
