@@ -242,7 +242,7 @@ module StraightServer
         StraightServer.logger.info "Attempting to send request to the callback url for order #{order.id} to #{callback_url}..."
 
         # Composing the request uri here
-        signature = self.check_signature ? "&signature=#{sign_with_secret(order.id, level: 2)}" : ''
+        signature = self.check_signature ? "&signature=#{sign_with_secret(order.id)}" : ''
         data      = order.data           ? "&data=#{order.data}"                                : ''
         uri       = URI.parse(callback_url + '?' + order.to_http_params + signature + data)
 

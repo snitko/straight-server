@@ -134,7 +134,7 @@ RSpec.describe StraightServer::Gateway do
     it "signs the callback if gateway has a secret" do
       @gateway = StraightServer::GatewayOnConfig.find_by_id(1) # Gateway 1 requires signatures
       expect(@response_mock).to receive(:code).twice.and_return("200")
-      expect(URI).to receive(:parse).with('http://localhost:3000/payment-callback?' + @order.to_http_params + "&signature=#{hmac_sha256(hmac_sha256(@order.id, 'secret'), 'secret')}")
+      expect(URI).to receive(:parse).with('http://localhost:3000/payment-callback?' + @order.to_http_params + "&signature=#{hmac_sha256(@order.id, 'secret')}")
       expect(Net::HTTP).to receive(:get_response).and_return(@response_mock)
       @gateway.order_status_changed(@order)
     end

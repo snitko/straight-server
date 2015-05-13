@@ -69,7 +69,7 @@ in a separate thread, so that when the money arrive, a callback will be issued t
 in the `~/.straight/config.yml` file for the current gateway. This callback request will contain order info too.
 Here's an example of a callback url request that could be made by Straight server when order status changes:
 
-    GET http://mystore.com/payment-callback?order_id=1&amount=1&status=2&address=1NZov2nm6gRCGW6r4q1qHtxXurrWNpPr1q&tid=tid1&data=some+random+data
+    GET http://mystore.com/payment-callback?order_id=234&amount=1&status=2&address=1NZov2nm6gRCGW6r4q1qHtxXurrWNpPr1q&tid=tid1&data=some+random+data&keychain_id=1&last_keychain_id=1
 
 As you may have noticed, there's a parameter called `data`. It is a way for you to pass info back
 to your app. It will have the same value as the `data` parameter you passed to the create order request:
@@ -91,7 +91,8 @@ You can check the status of the order manually with the following request:
 
     GET /gateways/1/orders/:id
 
-where id can either be order `id` or `payment_id` - both are returned in the json data when the order
+where `:id` can either be order `id` (CAUTION: order `id` is NOT the same as `keychain_id`) or
+`payment_id` - both are returned in the json data when the order
 is created (see above). The request above may return something like:
 
     {"status":2,"amount":1,"address":"1NZov2nm6gRCGW6r4q1qHtxXurrWNpPr1q","tid":"f0f9205e41bf1b79cb7634912e86bb840cedf8b1d108bd2faae1651ca79a5838","id":1, "keychain_id": 1, "last_keychain_id": 1 }
@@ -210,17 +211,17 @@ An example of obtaining such signature in Ruby:
     secret = 'a long string of random chars'
     OpenSSL::HMAC.digest('sha256', secret, "1").unpack("H*").first # "1" may be order_id here
 
-Straight server will also sign the callback url request. However, since the signature may be
-known to an attacker once it was used for creating a new order, we can no longer use it directly.
-Thus, Straight server will use a double signature calculated like this:
+Straight server will also sign the callback url request. However, since keychain_id may potentially
+be shared between 2 or more orders, the callback signature is based on internal `order_id` returned
+with the json after you create the said order. Here's an example of such a signature:
 
+    order.id #=> 234
     secret = 'a long string of random chars'
-    h1 = OpenSSL::HMAC.digest('sha256', secret, "1").unpack("H*").first
-    h2 = OpenSSL::HMAC.digest('sha256', secret, h1).unpack("H*").first
+    h = OpenSSL::HMAC.digest('sha256', secret, 234).unpack("H*").first
 
 and then send the request to the callback url with that signature:
 
-    GET http://mystore.com/payment-callback?order_id=1&amount=1&status=2&address=1NZov2nm6gRCGW6r4q1qHtxXurrWNpPr1q&tid=tid1&data=some+random+data?signature=aa14c26b2ae892a8719b0c2c57f162b967bfbfbdcc38d8883714a0680cf20467
+    GET http://mystore.com/payment-callback?order_id=234&amount=1&status=2&address=1NZov2nm6gRCGW6r4q1qHtxXurrWNpPr1q&tid=tid1&data=some+random+data?signature=aa14c26b2ae892a8719b0c2c57f162b967bfbfbdcc38d8883714a0680cf20467&keychain_id=1&last_keychain_id=1
 
 It is now up to your application to calculate that signature, compare it and
 make sure that only one such request is allowed (that is, if signature was used, it cannot be used again).
