@@ -61,7 +61,7 @@ Below I assume it runs on localhost on port 9696.
 
 the result of this request will be the following json:
 
-    {"status":0,"amount":1,"address":"1NZov2nm6gRCGW6r4q1qHtxXurrWNpPr1q","tid":null,"id":1 }
+    {"status":0,"amount":1,"address":"1NZov2nm6gRCGW6r4q1qHtxXurrWNpPr1q","tid":null,"id":1, keychain_id: 1, last_keychain_id: 1 }
 
 Now you can obviously use that output to provide your user with the address and the expected
 amount to be sent there. At this point, the server starts automatically tracking the order address
@@ -89,11 +89,12 @@ It will be converted using the current exchange rate (see [Straight::ExchangeAda
 **Checking the order manually**
 You can check the status of the order manually with the following request:
 
-    GET /gateways/1/orders/1
+    GET /gateways/1/orders/:id
 
-may return something like:
+where id can either be order `id` or `payment_id` - both are returned in the json data when the order
+is created (see above). The request above may return something like:
 
-    {"status":2,"amount":1,"address":"1NZov2nm6gRCGW6r4q1qHtxXurrWNpPr1q","tid":"f0f9205e41bf1b79cb7634912e86bb840cedf8b1d108bd2faae1651ca79a5838","id":1 }
+    {"status":2,"amount":1,"address":"1NZov2nm6gRCGW6r4q1qHtxXurrWNpPr1q","tid":"f0f9205e41bf1b79cb7634912e86bb840cedf8b1d108bd2faae1651ca79a5838","id":1, "keychain_id": 1, "last_keychain_id": 1 }
 
 **Subscribing to the order using websockets**:
 You can also subscribe to the order status changes using websockets at:
@@ -195,13 +196,12 @@ Go to your `~/.straight/config.yml` directory and set two options for each of yo
     check_signature: true
 
 This will force gateways to check signatures when you try to create a new order. A signature is
-a HMAC SHA256 hash of the secret and an order id. Because you need order id, it means you have
+a HMAC SHA256 hash of the secret and a keychain_id. Because you need keychain_id, it means you have
 to actually provide it manually in the params. It can be any integer > 0, but it's better
-that it is a consecutive integer, so keep track of order ids in your application. Obviously,
-if an order with such an id already exists, the request will be rejected. A possible request
-(assuming secret is the line mentioned above in the sample config) would look like this:
+that it is a consecutive integer, so keep track of the last keychain_id that was used in your
+application. A possible request (assuming secret is the line mentioned above in the sample config) would look like this:
 
-    POST /gateways/1/orders?amount=1&order_id=1&signature=aa14c26b2ae892a8719b0c2c57f162b967bfbfbdcc38d8883714a0680cf20467
+    POST /gateways/1/orders?amount=1&keychain_id=1&signature=aa14c26b2ae892a8719b0c2c57f162b967bfbfbdcc38d8883714a0680cf20467
 
 An example of obtaining such signature in Ruby:
 
@@ -224,6 +224,31 @@ and then send the request to the callback url with that signature:
 
 It is now up to your application to calculate that signature, compare it and
 make sure that only one such request is allowed (that is, if signature was used, it cannot be used again).
+
+What is keychain_id and why do we need it?
+------------------------------------------
+
+`keychain_id` is used to derive the next address from your BIP32 pubkey.
+If you try to create orders with the same `keychain_id` they will also have the same
+address, which is, as you can imagine, not a very good idea. However it is allowed and there's
+a good reason for that.
+
+Wallets that support BIP32 pubkeys will only do a forward address lookup for a limited number of
+addreses. For example, if you have 20 expired, unpaid orders and someone sends you money to the address
+of the 21-st order, your wallet may not see that. Thus, it is important to ensure that there are
+no more than N expired orders in a row. The respective setting in the config file is called
+`reuse_address_orders_threshold` and the default value is 20.
+
+If you have 20 orders in a row and try to create another one, straight-server will see that and will
+automatically reuse the `keychain_id` (and consequently, the address too) of the 20-th order. It will
+also set the 21-st order's `reused` field to the value of `1`.
+
+CAUTION: while you don't need to provide `keychain_id` when creating orders with gateways that
+do not require signatures, you still must do it with gateways that do require signatures.
+In this case, it is very important to make sure that you don't accidentally provide `keychain_id`
+that is too far away from the last used one. For example, if the gateway's `last_keychain_id` is `10`,
+do not use `35` for the next order, use `11`. `last_gateway_id` is always returned with other info
+when you create or check order status.
 
 Querying the blockchain
 -----------------------
