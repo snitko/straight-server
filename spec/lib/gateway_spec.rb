@@ -47,6 +47,28 @@ RSpec.describe StraightServer::Gateway do
     expect(@gateway.blockchain_adapters.map(&:class)).to eq([Straight::Blockchain::BlockchainInfoAdapter, Straight::Blockchain::MyceliumAdapter])
   end
 
+  context "reusing addreses" do
+
+    # Config.reuse_address_orders_threshold for the test env is 5
+    
+    before(:each) do
+      allow(@gateway).to receive(:order_status_changed).with(anything).and_return([])
+      allow(@gateway).to receive(:fetch_transactions_for).with(anything).and_return([])
+    end
+
+    it "finds all expired orders that follow in a row" do
+      create_list(:order, 4, status: StraightServer::Order::STATUSES[:expired], gateway_id: @gateway.id)
+      create_list(:order, 2, status: StraightServer::Order::STATUSES[:paid],    gateway_id: @gateway.id)
+      expired_orders_1 = create_list(:order, 5, status: StraightServer::Order::STATUSES[:expired], gateway_id: @gateway.id)
+      expired_orders_2 = create_list(:order, 2, status: StraightServer::Order::STATUSES[:expired], gateway_id: @gateway.id)
+
+      expect(@gateway.send(:find_expired_orders_row).size).to eq(5)
+      expect(@gateway.send(:find_expired_orders_row)).to     include(*expired_orders_1)
+      expect(@gateway.send(:find_expired_orders_row)).not_to include(*expired_orders_2)
+    end
+
+  end
+
   context "callback url" do
 
     before(:each) do

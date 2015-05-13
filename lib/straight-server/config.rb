@@ -14,7 +14,8 @@ module StraightServer
                     :check_order_status_in_db_first,
                     :port,
                     :blockchain_adapters,
-                    :expiration_overtime
+                    :expiration_overtime,
+                    :reuse_address_orders_threshold
     end
 
   end

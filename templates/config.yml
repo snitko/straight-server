@@ -16,6 +16,14 @@ count_orders: false
 # 30 seconds (default value) to be able to detect a late transaction 
 expiration_overtime: 30
 
+# If you have this number of expired addresses in a row,
+# the latest one of those will be reused to create a new order.
+# This is because wallets that support BIP32 do a limited lookup: they
+# only normally check the next 20 next addresses. Thus, the default value.
+# Without address reuse, merchants may fall into a situation where they
+# technically receive the money, but it's never detected by the wallet.
+reuse_address_orders_threshold: 20
+
 # Uncomment this if you want to use Gateway's order counters feature
 # It requires redis.
 #redis:

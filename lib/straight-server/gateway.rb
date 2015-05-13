@@ -238,6 +238,31 @@ module StraightServer
         StraightServer.logger.info "Callback request for order #{order.id} performed successfully"
       end
 
+
+      def find_expired_orders_row
+        
+        orders = []
+        row    = nil
+        offset = 0
+
+        while row.nil? || row.size > 0
+          row = Order.where(gateway_id: self.id).order(Sequel.desc(:keychain_id)).limit(Config.reuse_address_orders_threshold).offset(offset).to_a
+          row.each do |o|
+            if o.status == Order::STATUSES[:expired]
+              orders.unshift(o)
+            elsif o.status == Order::STATUSES[:new]
+              next
+            else
+              return orders[0...Config.reuse_address_orders_threshold]
+            end
+          end
+          offset += Config.reuse_address_orders_threshold
+        end
+
+        orders
+
+      end
+
   end
 
   # Uses database to load and save attributes
