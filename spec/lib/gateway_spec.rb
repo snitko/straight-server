@@ -72,8 +72,8 @@ RSpec.describe StraightServer::Gateway do
 
     it "finds all expired orders that follow in a row" do
       expect(@gateway.send(:find_expired_orders_row).size).to eq(5)
-      expect(@gateway.send(:find_expired_orders_row)).to     include(*@expired_orders_1)
-      expect(@gateway.send(:find_expired_orders_row)).not_to include(*@expired_orders_2)
+      expect(@gateway.send(:find_expired_orders_row).map(&:id)).to     include(*@expired_orders_1.map(&:id))
+      expect(@gateway.send(:find_expired_orders_row).map(&:id)).not_to include(*@expired_orders_2.map(&:id))
     end
 
     it "picks an expired order which address is going to be reused" do
@@ -102,6 +102,18 @@ RSpec.describe StraightServer::Gateway do
       order.save
       order_2 = @gateway.create_order(amount: 2252.706, currency: 'USD')
       expect(@gateway.last_keychain_id).to eq(last_keychain_id+1) 
+    end
+
+    it "after the reused order was paid, gives next order a new keychain_id" do
+      order = @gateway.create_order(amount: 2252.706, currency: 'USD')
+      order.status = StraightServer::Order::STATUSES[:expired]
+      order.save
+      expect(order.keychain_id).to eq(@expired_orders_1.last.keychain_id) 
+
+      order = @gateway.create_order(amount: 2252.706, currency: 'USD')
+      order.status = StraightServer::Order::STATUSES[:paid]
+      order.save
+      expect(@gateway.send(:find_expired_orders_row).map(&:id)).to be_empty
     end
 
   end

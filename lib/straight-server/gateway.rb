@@ -292,7 +292,21 @@ module StraightServer
         offset = 0
 
         while row.nil? || row.size > 0
-          row = Order.where(gateway_id: self.id).order(Sequel.desc(:keychain_id)).limit(Config.reuse_address_orders_threshold).offset(offset).to_a
+          row = Order.where(gateway_id: self.id).order(Sequel.desc(:keychain_id), Sequel.desc(:reused)).limit(Config.reuse_address_orders_threshold).offset(offset).to_a
+
+          
+          #p row.map { |o| "#{o.id} keychain_id: #{o.keychain_id}, reused: #{o.reused}" }
+
+          row.reject! do |o|
+            reject = false
+            row.each do |o2|
+              reject = true if o.keychain_id == o2.keychain_id && o.reused < o2.reused 
+            end
+            reject
+          end
+
+          row.sort! { |o1, o2| o2.id <=> o1.id }
+
           row.each do |o|
             if o.status == Order::STATUSES[:expired]
               orders.unshift(o)
