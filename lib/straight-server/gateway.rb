@@ -294,9 +294,6 @@ module StraightServer
         while row.nil? || row.size > 0
           row = Order.where(gateway_id: self.id).order(Sequel.desc(:keychain_id), Sequel.desc(:reused)).limit(Config.reuse_address_orders_threshold).offset(offset).to_a
 
-          
-          #p row.map { |o| "#{o.id} keychain_id: #{o.keychain_id}, reused: #{o.reused}" }
-
           row.reject! do |o|
             reject = false
             row.each do |o2|
@@ -379,7 +376,7 @@ module StraightServer
         cipher           = OpenSSL::Cipher::AES.new(128, :CBC)
         cipher.encrypt
         cipher.key       = OpenSSL::HMAC.digest('sha256', 'nonce', Config.server_secret).unpack("H*").first[0,16]
-        cipher.iv        = iv = OpenSSL::HMAC.digest('sha256', 'nonce', "#{self.id}#{Config.server_secret}").unpack("H*").first[0,16]
+        cipher.iv        = iv = OpenSSL::HMAC.digest('sha256', 'nonce', "#{self.class.max(:id)}#{Config.server_secret}").unpack("H*").first[0,16]
         encrypted        = cipher.update(self[:secret]) << cipher.final()
         base64_encrypted = Base64.strict_encode64(encrypted).encode('utf-8') 
         result           = "#{iv}:#{base64_encrypted}"
