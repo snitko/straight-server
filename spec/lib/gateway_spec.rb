@@ -288,6 +288,12 @@ RSpec.describe StraightServer::Gateway do
       expect(@gateway.secret).to eq("secret")
     end
 
+    it "re-encrypts the new gateway secrect if it was changed" do
+      @gateway.save
+      @gateway.update(secret: 'new secret', update_secret: true)
+      expect(@gateway.secret).to eq("new secret")
+    end
+
     it "finds orders using #find_by_id method which is essentially an alias for Gateway[]" do
       @gateway.save
       expect(StraightServer::GatewayOnDB.find_by_id(@gateway.id)).to eq(@gateway)

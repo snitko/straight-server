@@ -332,13 +332,26 @@ module StraightServer
     plugin :serialization, :marshal
     plugin :after_initialize
 
+
     def self.find_by_hashed_id(s)
       self.where(hashed_id: s).first
     end
 
+    # This virtual attribute is important because it's difficult to detect whether secret was actually
+    # updated or not. Sequel's #changed_columns may mistakenly say :secret attr was changed, while it
+    # hasn't. Thus we provide a manual way of ensuring this. It's also better and works as safety switch:
+    # we don't want somebody accidentally updating a secret.
+    attr_accessor :update_secret
+
     def before_create
       super
       encrypt_secret
+    end
+
+    def after_save
+      super
+      encrypt_secret if @update_secret
+      @update_secret = false
     end
 
     def after_create
@@ -370,28 +383,28 @@ module StraightServer
       self[id]
     end
 
-    private
+    def encrypt_secret
+      cipher           = OpenSSL::Cipher::AES.new(128, :CBC)
+      cipher.encrypt
+      cipher.key       = OpenSSL::HMAC.digest('sha256', 'nonce', Config.server_secret).unpack("H*").first[0,16]
 
-      def encrypt_secret
-        cipher           = OpenSSL::Cipher::AES.new(128, :CBC)
-        cipher.encrypt
-        cipher.key       = OpenSSL::HMAC.digest('sha256', 'nonce', Config.server_secret).unpack("H*").first[0,16]
+      cipher.iv        = iv = OpenSSL::HMAC.digest('sha256', 'nonce', "#{self.class.max(:id)}#{Config.server_secret}").unpack("H*").first[0,16]
+      raise "cipher.iv cannot be nil" unless iv
 
-        cipher.iv        = iv = OpenSSL::HMAC.digest('sha256', 'nonce', "#{self.class.max(:id)}#{Config.server_secret}").unpack("H*").first[0,16]
-        raise "cipher.iv cannot be nil" unless iv
-
-        encrypted        = cipher.update(self[:secret]) << cipher.final()
-        base64_encrypted = Base64.strict_encode64(encrypted).encode('utf-8') 
-        result           = "#{iv}:#{base64_encrypted}"
-        
-        # Check whether we can decrypt. It should not be possible to encrypt the
-        # gateway secret unless we are sure we can decrypt it.
-        if decrypt_secret(result) == self[:secret]
-          self.secret = result
-        else
-          raise "Decrypted and original secrets don't match! Cannot proceed with writing the encrypted gateway secret."
-        end
+      encrypted        = cipher.update(self[:secret]) << cipher.final()
+      base64_encrypted = Base64.strict_encode64(encrypted).encode('utf-8') 
+      result           = "#{iv}:#{base64_encrypted}"
+      
+      # Check whether we can decrypt. It should not be possible to encrypt the
+      # gateway secret unless we are sure we can decrypt it.
+      if decrypt_secret(result) == self[:secret]
+        self.secret = result
+      else
+        raise "Decrypted and original secrets don't match! Cannot proceed with writing the encrypted gateway secret."
       end
+    end
+
+    private
 
       def decrypt_secret(encrypted_field=self[:secret])
         decipher      = OpenSSL::Cipher::AES.new(128, :CBC)
