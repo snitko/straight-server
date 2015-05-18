@@ -348,10 +348,10 @@ module StraightServer
       encrypt_secret
     end
 
-    def after_save
-      super
+    def before_update
       encrypt_secret if @update_secret
       @update_secret = false
+      super
     end
 
     def after_create
