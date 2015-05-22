@@ -139,6 +139,7 @@ DEPENDENCIES
   httparty
   jeweler (~> 2.0.1)
   logmaster (= 0.1.5)
+  money-tree (= 0.9.0)
   redis
   rspec
   ruby-hmac

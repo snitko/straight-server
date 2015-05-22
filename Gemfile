@@ -8,6 +8,7 @@ gem "sequel"
 gem "logmaster", '0.1.5'
 gem "ruby-hmac"
 gem "httparty"
+gem "money-tree", "0.9.0"
 
 # Add dependencies to develop your gem here.
 # Include everything needed to run rake, tests, features, etc.
