@@ -43,6 +43,7 @@ RSpec.describe StraightServer::OrdersController do
       send_request "POST", '/gateways/2/orders', amount: 1
       expect(response[0]).to eq(503)
       expect(response[2]).to eq("The gateway is inactive, you cannot create order with it")
+      @gateway.active = true
     end
 
     it "finds gateway using hashed_id" do
@@ -55,6 +56,17 @@ RSpec.describe StraightServer::OrdersController do
       expect(response[2]).to eq("Error: order_id is no longer a valid param. Use keychain_id instead and consult the documentation.")
     end
 
+    it 'limits requests rate' do
+      new_config          = StraightServer::Config.dup
+      new_config.throttle = {requests_limit: 1, period: 1}
+      stub_const 'StraightServer::Config', new_config
+      allow(StraightServer::Thread).to receive(:new) # ignore periodic status checks, we're not testing it here
+      send_request "POST", '/gateways/2/orders', amount: 10
+      expect(response).to render_json_with(status: 0, amount: 10, address: "address1", tid: nil, id: :anything, keychain_id: @gateway.last_keychain_id, last_keychain_id: @gateway.last_keychain_id)
+      send_request "POST", '/gateways/2/orders', amount: 10
+      expect(response).to eq [429, {}, "Too many requests, please try again later"]
+      # TODO: test that it's not affecting gateways with check_signature: true
+    end
   end
 
   describe "show action" do

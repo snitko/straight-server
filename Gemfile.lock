@@ -120,6 +120,7 @@ GEM
       money-tree
       satoshi-unit
     thread_safe (0.3.5)
+    timecop (0.7.3)
     tzinfo (1.2.2)
       thread_safe (~> 0.1)
     websocket-driver (0.5.4)
@@ -147,3 +148,4 @@ DEPENDENCIES
   sequel
   sqlite3
   straight (= 0.2.2)
+  timecop

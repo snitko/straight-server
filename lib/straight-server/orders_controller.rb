@@ -1,3 +1,5 @@
+require_relative './throttler'
+
 module StraightServer
 
   class OrdersController
@@ -13,17 +15,26 @@ module StraightServer
     end
 
     def create
-      
+
       unless @gateway
         StraightServer.logger.warn "Gateway not found"
         return [404, {}, "Gateway not found" ]
       end
 
+      unless @gateway.check_signature
+        ip = @env['HTTP_X_FORWARDED_FOR'].to_s
+        ip = @env['REMOTE_ADDR'] if ip.empty?
+        if StraightServer::Throttler.new(@gateway.id).deny?(ip)
+          StraightServer.logger.warn message = "Too many requests, please try again later"
+          return [429, {}, message]
+        end
+      end
+
       begin
-  
+
         # This is to inform users of previous version of a deprecated param
         # It will have to be removed at some point.
-        if @params['order_id'] 
+        if @params['order_id']
           return [409, {}, "Error: order_id is no longer a valid param. Use keychain_id instead and consult the documentation." ]
         end
 
@@ -47,7 +58,7 @@ module StraightServer
       rescue Sequel::ValidationFailed => e
         StraightServer.logger.warn(
           "VALIDATION ERRORS in order, cannot create it:\n" +
-          "#{e.message.split(",").each_with_index.map { |e,i| "#{i+1}. #{e.lstrip}"}.join("\n") }\n" + 
+          "#{e.message.split(",").each_with_index.map { |e,i| "#{i+1}. #{e.lstrip}"}.join("\n") }\n" +
           "Order data: #{order_data.inspect}\n"
         )
         [409, {}, "Invalid order: #{e.message}" ]
@@ -79,7 +90,7 @@ module StraightServer
     end
 
     def websocket
-      
+
       order = find_order
       if order
         begin
@@ -96,7 +107,7 @@ module StraightServer
     private
 
       def dispatch
-        
+
         StraightServer.logger.blank_lines
         StraightServer.logger.info "#{@method} #{@env['REQUEST_PATH']}\n#{@params}"
 
@@ -113,7 +124,7 @@ module StraightServer
         elsif @request_path[3].nil?# && @method == 'POST'
           create
         end
-        @response = [404, {}, "#{@method} /#{@request_path.join('/')} Not found"] if @response.nil? 
+        @response = [404, {}, "#{@method} /#{@request_path.join('/')} Not found"] if @response.nil?
       end
 
       def find_order
