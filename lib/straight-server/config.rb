@@ -15,7 +15,8 @@ module StraightServer
                     :port,
                     :blockchain_adapters,
                     :expiration_overtime,
-                    :reuse_address_orders_threshold
+                    :reuse_address_orders_threshold,
+                    :throttle
     end
 
   end

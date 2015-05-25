@@ -19,6 +19,7 @@ group :development do
 end
 
 group :test do
+  gem 'timecop'
   gem 'rspec'
   gem 'factory_girl'
   gem 'sqlite3'

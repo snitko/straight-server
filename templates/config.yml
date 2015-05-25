@@ -13,7 +13,7 @@ count_orders: false
 # transaction has been made in the last seconds and Straight didn't have time to detect it?
 # This just adds a little bit more time to each expiration period.
 # So technically, you can tell your customer he's got 900 seconds to pay, yet wait additional
-# 30 seconds (default value) to be able to detect a late transaction 
+# 30 seconds (default value) to be able to detect a late transaction
 expiration_overtime: 30
 
 # If you have this number of expired addresses in a row,
@@ -23,6 +23,15 @@ expiration_overtime: 30
 # Without address reuse, merchants may fall into a situation where they
 # technically receive the money, but it's never detected by the wallet.
 reuse_address_orders_threshold: 20
+
+# Uncomment this if you want to limit orders creation rate.
+# For example, if user's cat makes more than 21 new orders during 60 seconds (from the same IP and Widget),
+# any user with this IP will be unable to create more orders via this Widget during those 60 seconds
+# Additionally, you can block new orders creation via any Widget from throttled IP for 300 seconds
+#throttle:
+#  requests_limit: 21
+#  period: 60
+#  ip_ban_duration: 300
 
 # Uncomment this if you want to use Gateway's order counters feature
 # It requires redis.
@@ -78,7 +87,7 @@ blockchain_adapters:
 logmaster:
   log_level: INFO # Wise to change to WARN for production
   file: straight.log
-  raise_exception: false 
+  raise_exception: false
   name: Straight server logger
 
   # These options bellow send you email whenever a FATAL error occurs.
