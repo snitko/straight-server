@@ -67,14 +67,15 @@ Now you can obviously use that output to provide your user with the address and 
 amount to be sent there. At this point, the server starts automatically tracking the order address
 in a separate thread, so that when the money arrive, a callback will be issued to the url provided
 in the `~/.straight/config.yml` file for the current gateway. This callback request will contain order info too.
+
 Here's an example of a callback url request that could be made by Straight server when order status changes:
 
-    GET http://mystore.com/payment-callback?order_id=234&amount=1&status=2&address=1NZov2nm6gRCGW6r4q1qHtxXurrWNpPr1q&tid=tid1&data=some+random+data&keychain_id=1&last_keychain_id=1
+    GET http://mystore.com/payment-callback?order_id=234&amount=1&status=2&address=1NZov2nm6gRCGW6r4q1qHtxXurrWNpPr1q&tid=tid1&callback_data=some+random+data&keychain_id=1&last_keychain_id=1
 
-As you may have noticed, there's a parameter called `data`. It is a way for you to pass info back
-to your app. It will have the same value as the `data` parameter you passed to the create order request:
+As you may have noticed, there's a parameter called `callback_data`. It is a way for you to pass info back
+to your app. It will have the same value as the `callback_data` parameter you passed to the create order request:
 
-    POST /gateways/1/orders?amount=1&data=some+random+data
+    POST /gateways/1/orders?amount=1&callback_data=some+random+data
 
 You can specify amount in other currencies, as well as various BTC denominations.
 It will be converted using the current exchange rate (see [Straight::ExchangeAdapter](https://github.com/snitko/straight/blob/master/lib/straight/exchange_rate_adapter.rb)) into satoshis:
@@ -221,7 +222,7 @@ with the json after you create the said order. Here's an example of such a signa
 
 and then send the request to the callback url with that signature:
 
-    GET http://mystore.com/payment-callback?order_id=234&amount=1&status=2&address=1NZov2nm6gRCGW6r4q1qHtxXurrWNpPr1q&tid=tid1&data=some+random+data?signature=aa14c26b2ae892a8719b0c2c57f162b967bfbfbdcc38d8883714a0680cf20467&keychain_id=1&last_keychain_id=1
+    GET http://mystore.com/payment-callback?order_id=234&amount=1&status=2&address=1NZov2nm6gRCGW6r4q1qHtxXurrWNpPr1q&tid=tid1&callback_data=some+random+data?signature=aa14c26b2ae892a8719b0c2c57f162b967bfbfbdcc38d8883714a0680cf20467&keychain_id=1&last_keychain_id=1
 
 It is now up to your application to calculate that signature, compare it and
 make sure that only one such request is allowed (that is, if signature was used, it cannot be used again).
