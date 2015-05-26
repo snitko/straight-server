@@ -11,8 +11,8 @@ Sequel.migration do
   end
 
   down do
-    remove_index  :gateways, :hashed_id
-    remove_column :gateways, :hashed_id
+    drop_index  :gateways, :hashed_id
+    drop_column :gateways, :hashed_id
   end
 
 end

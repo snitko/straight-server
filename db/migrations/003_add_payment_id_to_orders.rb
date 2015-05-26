@@ -7,7 +7,7 @@ Sequel.migration do
 
   down do
     drop_index    :orders, :payment_id
-    remove_column :orders, :payment_id
+    drop_column :orders, :payment_id
   end
 
 end
