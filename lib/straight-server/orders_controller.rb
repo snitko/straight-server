@@ -55,6 +55,7 @@ module StraightServer
             order.start_periodic_status_check
           end
         end
+        order = add_callback_data_warning(order)
         [200, {}, order.to_json ]
       rescue Sequel::ValidationFailed => e
         StraightServer.logger.warn(
@@ -134,6 +135,14 @@ module StraightServer
         else
           Order[@params['id']]
         end
+      end
+
+      def add_callback_data_warning(order)
+        o = order.to_h
+        if @params['data'].kind_of?(String) && @params['callback_data'].nil?
+          o[:WARNING] = "Maybe you meant to use callback_data? The API has changed now. Consult the documentation."
+        end
+        o
       end
 
   end

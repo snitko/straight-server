@@ -68,6 +68,13 @@ RSpec.describe StraightServer::OrdersController do
       expect(response).to eq [429, {}, "Too many requests, please try again later"]
       # TODO: test that it's not affecting gateways with check_signature: true
     end
+
+    it "warns you about the use of callback_data instead of data" do
+      allow(StraightServer::Thread).to receive(:new)
+      send_request "POST", '/gateways/2/orders', amount: 10, data: "I meant this to be callback_data"
+      expect(response).to render_json_with(WARNING: "Maybe you meant to use callback_data? The API has changed now. Consult the documentation.")
+    end
+    
   end
 
   describe "show action" do
