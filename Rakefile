@@ -10,6 +10,9 @@ rescue Bundler::BundlerError => e
   exit e.status_code
 end
 require 'rake'
+require 'bundler/setup'
+
+Dir.glob('lib/tasks/*.rake').each { |r| load r }
 
 require 'jeweler'
 Jeweler::Tasks.new do |gem|
