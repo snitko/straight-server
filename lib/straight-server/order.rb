@@ -7,8 +7,15 @@ module StraightServer
     plugin :timestamps, create: :created_at, update: :updated_at
 
     plugin :serialization
-    serialize_attributes :marshal, :callback_response
+
+    # Additional data that can be passed and stored with each order. Not returned with the callback.
     serialize_attributes :marshal, :data
+    
+    # data that was provided by the merchan upon order creation and is sent back with the callback
+    serialize_attributes :marshal, :callback_data     
+
+    # stores the response of the server to which the callback is issued
+    serialize_attributes :marshal, :callback_response 
 
     plugin :after_initialize
     def after_initialize

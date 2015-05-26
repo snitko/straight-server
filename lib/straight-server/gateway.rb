@@ -127,10 +127,11 @@ module StraightServer
           currency:         attrs[:currency],
           btc_denomination: attrs[:btc_denomination]
         )
-        order.id         = attrs[:id].to_i if attrs[:id]
-        order.data       = attrs[:data]    if attrs[:data]
-        order.gateway    = self
-        order.reused     = reused_order.reused + 1 if reused_order
+        order.id            = attrs[:id].to_i       if attrs[:id]
+        order.data          = attrs[:data]          if attrs[:data]
+        order.callback_data = attrs[:callback_data] if attrs[:callback_data]
+        order.gateway       = self
+        order.reused        = reused_order.reused + 1 if reused_order
         order.save
 
         self.update_last_keychain_id(attrs[:keychain_id]) unless order.reused > 0
@@ -243,8 +244,8 @@ module StraightServer
 
         # Composing the request uri here
         signature = self.check_signature ? "&signature=#{sign_with_secret(order.id)}" : ''
-        data      = order.data           ? "&data=#{order.data}"                                : ''
-        uri       = URI.parse(callback_url + '?' + order.to_http_params + signature + data)
+        callback_data = order.callback_data ? "&callback_data=#{order.callback_data}" : ''
+        uri           = URI.parse(callback_url + '?' + order.to_http_params + signature + callback_data)
 
         begin
           response = Net::HTTP.get_response(uri)

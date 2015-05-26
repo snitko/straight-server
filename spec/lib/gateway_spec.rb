@@ -154,10 +154,10 @@ RSpec.describe StraightServer::Gateway do
     it "receives random data in :data params and sends it back in a callback request" do
       @order.data = 'some random data'
       expect(@gateway).to receive(:order_for_keychain_id).with(@order_for_keychain_id_args).once.and_return(@order)
-      @gateway.create_order(amount: 1, data: 'some random data')
+      @gateway.create_order(amount: 1, callback_data: 'some random data')
       expect(@response_mock).to receive(:code).twice.and_return("200")
       expect(Net::HTTP).to receive(:get_response).and_return(@response_mock)
-      expect(URI).to receive(:parse).with('http://localhost:3001/payment-callback?' + @order.to_http_params + "&data=#{@order.data}")
+      expect(URI).to receive(:parse).with('http://localhost:3001/payment-callback?' + @order.to_http_params + "&callback_data=#{@order.data}")
       @gateway.order_status_changed(@order)
     end
 

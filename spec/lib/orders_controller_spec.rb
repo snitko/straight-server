@@ -32,10 +32,11 @@ RSpec.describe StraightServer::OrdersController do
       send_request "POST", '/gateways/2/orders', amount: 10
     end
 
-    it "passes data param to Order which then saves it serialized" do
+    it "passes data and callback_data param to Order which then saves it serialized" do
       allow(StraightServer::Thread).to receive(:new) # ignore periodic status checks, we're not testing it here
-      send_request "POST", '/gateways/2/orders', amount: 10, data: { hello: 'world' }
+      send_request "POST", '/gateways/2/orders', amount: 10, data: { hello: 'world' }, callback_data: 'some random data'
       expect(StraightServer::Order.last.data.hello).to eq('world')
+      expect(StraightServer::Order.last.callback_data).to eq('some random data')
     end
 
     it "renders 503 page when the gateway is inactive" do

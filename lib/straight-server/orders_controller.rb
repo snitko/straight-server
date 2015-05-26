@@ -44,12 +44,13 @@ module StraightServer
           btc_denomination: @params['btc_denomination'],
           keychain_id:      @params['keychain_id'],
           signature:        @params['signature'],
+          callback_data:    @params['callback_data'],
           data:             @params['data']
         }
         order = @gateway.create_order(order_data)
         StraightServer::Thread.new do
           # Because this is a new thread, we have to wrap the code inside in #watch_exceptions
-          # once again. Otherwise, not watching is done. Oh, threads!
+          # once again. Otherwise, no watching is done. Oh, threads!
           StraightServer.logger.watch_exceptions do
             order.start_periodic_status_check
           end
