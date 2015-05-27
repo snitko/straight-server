@@ -9,7 +9,7 @@ namespace :db do
     connect_to_db
   end
 
-  desc "Migrate the database"
+  desc "Migrates the database"
   task :migrate, [:step] => :environment do |t, args|
     target = args[:step] && (step = args[:step].to_i) > 0 ?
                current_migration_version + step : nil
@@ -18,7 +18,7 @@ namespace :db do
     dump_schema
   end
 
-  desc "Rollbacks the database migrations"
+  desc "Rollbacks database migrations"
   task :rollback, [:step] => :environment do |t, args|
     target = args[:step] && (step = args[:step].to_i) > 0 ?
       current_migration_version - step : 0
