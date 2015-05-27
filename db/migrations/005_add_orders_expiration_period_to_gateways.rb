@@ -5,7 +5,7 @@ Sequel.migration do
   end
 
   down do
-    remove_column :gateways, :orders_expiration_period
+    drop_column :gateways, :orders_expiration_period
   end
 
 end

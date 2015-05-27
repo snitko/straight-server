@@ -5,7 +5,7 @@ Sequel.migration do
   end
 
   down do
-    remove_column :gateways, :active
+    drop_column :gateways, :active
   end
 
 end

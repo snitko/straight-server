@@ -5,7 +5,7 @@ Sequel.migration do
   end
 
   down do
-    remove_column :gateways, :check_order_status_in_db_first
+    drop_column :gateways, :check_order_status_in_db_first
   end
 
 end

@@ -5,7 +5,7 @@ Sequel.migration do
   end
 
   down do
-    remove_column :gateways, :order_counters
+    drop_column :gateways, :order_counters
   end
 
 end

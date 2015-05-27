@@ -3,6 +3,7 @@ module StraightServer
   module Initializer
 
     GEM_ROOT = File.expand_path('../..', File.dirname(__FILE__))
+    MIGRATIONS_ROOT = GEM_ROOT + '/db/migrations/'
 
     module ConfigDir
 
@@ -106,12 +107,12 @@ module StraightServer
 
     def run_migrations
       print "\nPending migrations for the database detected. Migrating..."
-      Sequel::Migrator.run(StraightServer.db_connection, GEM_ROOT + '/db/migrations/')
+      Sequel::Migrator.run(StraightServer.db_connection, MIGRATIONS_ROOT)
       print "done\n\n"
     end
 
     def migrations_pending?
-      !Sequel::Migrator.is_current?(StraightServer.db_connection, GEM_ROOT + '/db/migrations/')
+      !Sequel::Migrator.is_current?(StraightServer.db_connection, MIGRATIONS_ROOT)
     end
 
     def create_logger

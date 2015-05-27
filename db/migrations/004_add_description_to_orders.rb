@@ -5,7 +5,7 @@ Sequel.migration do
   end
 
   down do
-    remove_column :orders, :description
+    drop_column :orders, :description
   end
 
 end
