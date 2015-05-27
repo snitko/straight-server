@@ -57,16 +57,25 @@ RSpec.describe StraightServer::OrdersController do
       expect(response[2]).to eq("Error: order_id is no longer a valid param. Use keychain_id instead and consult the documentation.")
     end
 
-    it 'limits requests rate' do
+    it 'limits creation of orders without signature' do
       new_config          = StraightServer::Config.dup
       new_config.throttle = {requests_limit: 1, period: 1}
       stub_const 'StraightServer::Config', new_config
-      allow(StraightServer::Thread).to receive(:new) # ignore periodic status checks, we're not testing it here
+      allow(StraightServer::Thread).to receive(:new)
+
       send_request "POST", '/gateways/2/orders', amount: 10
       expect(response).to render_json_with(status: 0, amount: 10, address: "address1", tid: nil, id: :anything, keychain_id: @gateway.last_keychain_id, last_keychain_id: @gateway.last_keychain_id)
       send_request "POST", '/gateways/2/orders', amount: 10
       expect(response).to eq [429, {}, "Too many requests, please try again later"]
-      # TODO: test that it's not affecting gateways with check_signature: true
+
+      @gateway1 = StraightServer::Gateway.find_by_id(1)
+      @gateway1.check_signature = true
+      5.times do |i|
+        i += 1
+        send_request "POST", '/gateways/1/orders', amount: 10, keychain_id: i, signature: @gateway1.sign_with_secret(i)
+        expect(response[0]).to eq 200
+        expect(response).to render_json_with(status: 0, amount: 10, tid: nil, id: :anything, keychain_id: i, last_keychain_id: i)
+      end
     end
 
     it "warns you about the use of callback_data instead of data" do
@@ -74,7 +83,6 @@ RSpec.describe StraightServer::OrdersController do
       send_request "POST", '/gateways/2/orders', amount: 10, data: "I meant this to be callback_data"
       expect(response).to render_json_with(WARNING: "Maybe you meant to use callback_data? The API has changed now. Consult the documentation.")
     end
-    
   end
 
   describe "show action" do
