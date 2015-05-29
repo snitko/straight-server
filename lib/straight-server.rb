@@ -6,6 +6,7 @@ require 'logmaster'
 require 'openssl'
 require 'base64'
 require 'net/http'
+require 'redis'
 require 'faye/websocket'
 Sequel.extension :migration
 

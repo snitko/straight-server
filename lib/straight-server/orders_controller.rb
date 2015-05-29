@@ -1,4 +1,5 @@
 require_relative './throttler'
+require_relative './order'
 
 module StraightServer
 
@@ -48,10 +49,11 @@ module StraightServer
           data:             @params['data']
         }
         order = @gateway.create_order(order_data)
-        StraightServer::Thread.new do
+        StraightServer::Thread.new(label: order.payment_id) do
           # Because this is a new thread, we have to wrap the code inside in #watch_exceptions
           # once again. Otherwise, no watching is done. Oh, threads!
           StraightServer.logger.watch_exceptions do
+            # FIXME: sometimes raises NoMethodError: undefined method `start_periodic_status_check' for Hash
             order.start_periodic_status_check
           end
         end
@@ -106,8 +108,32 @@ module StraightServer
       end
     end
 
+    def cancel
+      unless @gateway
+        StraightServer.logger.warn "Gateway not found"
+        return [404, {}, "Gateway not found"]
+      end
+      if (order = find_order)
+        if @gateway.check_signature
+          signature = @gateway.sign_with_secret(order.keychain_id, level: 2)
+          if @params['signature'] != signature
+            return [409, {}, "Invalid signature"]
+          end
+        end
+        order.status(reload: true)
+        order.save if order.status_changed?
+        if order.cancelable?
+          order.cancel
+          [200, {}, '']
+        else
+          [409, {}, "Order is not cancelable"]
+        end
+      end
+    end
+
     private
 
+      # Refactoring proposed: https://github.com/AlexanderPavlenko/straight-server/commit/49ea6e3732a9564c04d8dfecaee6d0ebaa462042
       def dispatch
 
         StraightServer.logger.blank_lines
@@ -120,6 +146,8 @@ module StraightServer
           @params['id'] = @params['id'].to_i if @params['id'] =~ /\A\d+\Z/
           if @request_path[4] == 'websocket'
             websocket
+          elsif @request_path[4] == 'cancel'&& @method == 'POST'
+            cancel
           elsif @request_path[4].nil? && @method == 'GET'
             show
           end

@@ -1,5 +1,5 @@
 module StraightServer
- 
+
   class Order < Sequel::Model
 
     include Straight::OrderModule
@@ -10,12 +10,12 @@ module StraightServer
 
     # Additional data that can be passed and stored with each order. Not returned with the callback.
     serialize_attributes :marshal, :data
-    
+
     # data that was provided by the merchan upon order creation and is sent back with the callback
-    serialize_attributes :marshal, :callback_data     
+    serialize_attributes :marshal, :callback_data
 
     # stores the response of the server to which the callback is issued
-    serialize_attributes :marshal, :callback_response 
+    serialize_attributes :marshal, :callback_response
 
     plugin :after_initialize
     def after_initialize
@@ -25,7 +25,7 @@ module StraightServer
     def gateway
       @gateway ||= Gateway.find_by_id(gateway_id)
     end
-    
+
     def gateway=(g)
       self.gateway_id = g.id
       @gateway        = g
@@ -58,6 +58,16 @@ module StraightServer
         end
       end
       self[:status] = @status
+    end
+
+    def cancelable?
+      status == Straight::Order::STATUSES.fetch(:new)
+    end
+
+    def cancel
+      self.status = Straight::Order::STATUSES.fetch(:canceled)
+      save
+      StraightServer::Thread.interrupt(label: payment_id)
     end
 
     def save
@@ -96,13 +106,13 @@ module StraightServer
         self.data = {} unless self.data
         self.data[:exchange_rate] = { price: gateway.current_exchange_rate, currency: gateway.default_currency }
       end
-      
+
       super
     end
 
     # Update Gateway's order_counters, incrementing the :new counter.
     # All other increments/decrements happen in the the Gateway#order_status_changed callback,
-    # but the initial :new increment needs this code because the Gateway#order_status_changed 
+    # but the initial :new increment needs this code because the Gateway#order_status_changed
     # isn't called in this case.
     def after_create
       self.gateway.increment_order_counter!(:new) if StraightServer::Config.count_orders
@@ -121,6 +131,10 @@ module StraightServer
     end
 
     def check_status_on_schedule(period: 10, iteration_index: 0, duration: 600, time_passed: 0)
+      if StraightServer::Thread.interrupted?(thread: ::Thread.current)
+        StraightServer.logger.info "Checking status of order #{self.id} interrupted"
+        return
+      end
       StraightServer.logger.info "Checking status of order #{self.id}"
       super
     end
