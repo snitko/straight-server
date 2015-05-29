@@ -53,13 +53,13 @@ module StraightServer
       FileUtils.mkdir_p(ConfigDir.path) unless File.exist?(ConfigDir.path)
 
       unless File.exist?(ConfigDir.path + '/addons.yml')
-        puts "\e[1;33mNOTICE!\e[0m \e[33mNo file ~/.straight/addons.yml was found. Created an empty sample for you.\e[0m"
+        puts "\e[1;33mNOTICE!\e[0m \e[33mNo file #{ConfigDir.path}/addons.yml was found. Created an empty sample for you.\e[0m"
         puts "No need to restart until you actually list your addons there. Now will continue loading StraightServer."
-        FileUtils.cp(GEM_ROOT + '/templates/addons.yml', ENV['HOME'] + '/.straight/') 
+        FileUtils.cp(GEM_ROOT + '/templates/addons.yml', ConfigDir.path)
       end
 
       unless File.exist?(ConfigDir.path + '/server_secret')
-        puts "\e[1;33mNOTICE!\e[0m \e[33mNo file ~/.straight/server_secret was found. Created one for you.\e[0m"
+        puts "\e[1;33mNOTICE!\e[0m \e[33mNo file #{ConfigDir.path}/server_secret was found. Created one for you.\e[0m"
         puts "No need to restart so far. Now will continue loading StraightServer."
         File.open(ConfigDir.path + '/server_secret', "w") do |f|
           f.puts String.random(16)
@@ -67,10 +67,10 @@ module StraightServer
       end
 
       unless File.exist?(ConfigDir.path + '/config.yml')
-        puts "\e[1;33mWARNING!\e[0m \e[33mNo file ~/.straight/config was found. Created a sample one for you.\e[0m"
+        puts "\e[1;33mWARNING!\e[0m \e[33mNo file #{ConfigDir.path}/config.yml was found. Created a sample one for you.\e[0m"
         puts "You should edit it and try starting the server again.\n"
 
-        FileUtils.cp(GEM_ROOT + '/templates/config.yml', ENV['HOME'] + '/.straight/') 
+        FileUtils.cp(GEM_ROOT + '/templates/config.yml', ConfigDir.path)
         puts "Shutting down now.\n\n"
         exit
       end
