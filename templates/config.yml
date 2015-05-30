@@ -30,8 +30,8 @@ reuse_address_orders_threshold: 20
 # Additionally, you can block new orders creation via any Widget from throttled IP for 300 seconds
 #throttle:
 #  requests_limit: 21
-#  period: 60
-#  ip_ban_duration: 300
+#  period: 60           # in seconds
+#  ip_ban_duration: 300 # in seconds
 
 # Uncomment this if you want to use Gateway's order counters feature
 # It requires redis.
