@@ -115,9 +115,9 @@ GEM
     satoshi-unit (0.1.7)
     sequel (4.22.0)
     sqlite3 (1.3.10)
-    straight (0.2.2)
+    straight (0.2.3)
       httparty
-      money-tree
+      money-tree (= 0.9.0)
       satoshi-unit
     thread_safe (0.3.5)
     timecop (0.7.3)
@@ -147,5 +147,5 @@ DEPENDENCIES
   satoshi-unit
   sequel
   sqlite3
-  straight (= 0.2.2)
+  straight (= 0.2.3)
   timecop
