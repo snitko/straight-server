@@ -11,7 +11,7 @@ Gem::Specification.new do |s|
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.require_paths = ["lib"]
   s.authors = ["Roman Snitko"]
-  s.date = "2015-05-25"
+  s.date = "2015-05-30"
   s.description = "Accepts orders via http, returns payment info via http or streams updates via websockets, stores orders in a DB"
   s.email = "roman.snitko@gmail.com"
   s.executables = ["straight-console", "straight-server", "straight-server-benchmark"]
@@ -47,6 +47,8 @@ Gem::Specification.new do |s|
     "db/migrations/008_add_order_counters_to_gateways.rb",
     "db/migrations/009_add_hashed_id_to_gateways.rb",
     "db/migrations/010_add_address_reusability_orders.rb",
+    "db/migrations/011_add_callback_data_to_orders.rb",
+    "db/schema.rb",
     "examples/client/client.dart",
     "examples/client/client.html",
     "examples/client/client.js",
@@ -62,6 +64,7 @@ Gem::Specification.new do |s|
     "lib/straight-server/thread.rb",
     "lib/straight-server/throttler.rb",
     "lib/straight-server/utils/hash_string_to_sym_keys.rb",
+    "lib/tasks/db.rake",
     "spec/.straight/config.yml",
     "spec/.straight/server_secret",
     "spec/factories.rb",
