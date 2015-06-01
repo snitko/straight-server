@@ -8,6 +8,8 @@ pkg
 spec/.straight/default_last_keychain_id
 spec/.straight/second_gateway_last_keychain_id
 spec/.straight/straight.db
+spec/.straight/addons.yml
+spec/.straight/straight.log
 
 benchmark/straight.db
 benchmark/default_last_keychain_id

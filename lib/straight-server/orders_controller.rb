@@ -1,5 +1,4 @@
-require_relative './throttler'
-require_relative './order'
+require_relative 'throttler'
 
 module StraightServer
 

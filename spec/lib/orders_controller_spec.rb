@@ -27,6 +27,7 @@ RSpec.describe StraightServer::OrdersController do
     it "starts tracking the order status in a separate thread" do
       order_mock = double("order mock")
       expect(order_mock).to receive(:start_periodic_status_check)
+      expect(order_mock).to receive(:payment_id).and_return('blabla')
       allow(order_mock).to  receive(:to_h).and_return({})
       expect(@gateway).to   receive(:create_order).and_return(order_mock)
       send_request "POST", '/gateways/2/orders', amount: 10
@@ -163,7 +164,38 @@ RSpec.describe StraightServer::OrdersController do
       send_request "GET", '/gateways/2/orders/payment_id/websocket'
       expect(response).to eq("ws rack response")
     end
+  end
 
+  describe "cancel action" do
+    it "cancels new order" do
+      allow(StraightServer::Thread).to receive(:new)
+      send_request "POST", '/gateways/2/orders', amount: 1
+      payment_id = JSON.parse(response[2])['payment_id']
+      send_request "POST", "/gateways/2/orders/#{payment_id}/cancel"
+      expect(response[0]).to eq 200
+    end
+
+    it "requires signature to cancel signed order" do
+      allow(StraightServer::Thread).to receive(:new)
+      @gateway1                 = StraightServer::Gateway.find_by_id(1)
+      @gateway1.check_signature = true
+      send_request "POST", '/gateways/1/orders', amount: 10, keychain_id: 1, signature: @gateway1.sign_with_secret(1)
+      payment_id = JSON.parse(response[2])['payment_id']
+      send_request "POST", "/gateways/1/orders/#{payment_id}/cancel"
+      expect(response).to eq [409, {}, "Invalid signature"]
+      send_request "POST", "/gateways/1/orders/#{payment_id}/cancel", signature: @gateway1.sign_with_secret(1, level: 2)
+      expect(response[0]).to eq 200
+    end
+
+    it "do not cancel orders with status != new" do
+      @order_mock = double('order mock')
+      allow(@order_mock).to receive(:status).with(reload: true)
+      allow(@order_mock).to receive(:status_changed?).and_return(false)
+      allow(@order_mock).to receive(:cancelable?).and_return(false)
+      allow(StraightServer::Order).to receive(:[]).and_return(@order_mock)
+      send_request "POST", "/gateways/2/orders/payment_id/cancel"
+      expect(response).to eq [409, {}, "Order is not cancelable"]
+    end
   end
 
   def send_request(method, path, params={})

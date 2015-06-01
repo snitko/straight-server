@@ -12,40 +12,32 @@ DB = Sequel.sqlite
 # 2. Then we can run migrations BEFORE we load actual models
 Sequel::Migrator.run(DB, File.expand_path('../', File.dirname(__FILE__)) + '/db/migrations/')
 
-# 3. Load config and initializer so that we can read our test config file located in
-# spec/.straight/config.yml
+# Actually load the initializer
+require_relative '../lib/straight-server'
 
-# 3.1 This tells initializer where to read the config file from
+# This tells initializer where to read the config file from
 ENV['HOME'] = File.expand_path(File.dirname(__FILE__))
 
-# 3.2 Actually load the initializer
-require_relative "../lib/straight-server/config"
-require_relative "../lib/straight-server/initializer"
-require_relative "../lib/straight-server/utils/hash_string_to_sym_keys"
-include StraightServer::Initializer
-StraightServer::Initializer::ConfigDir.set!
-read_config_file
-setup_redis_connection
-
-# 4. Load the rest of the files, including models, which are now ready
-# to be used as intended and will follow all the previous configuration.
-require_relative '../lib/straight-server/order'
+initializer = Class.new do
+  include StraightServer::Initializer
+end.new
+initializer.prepare
 require_relative '../lib/straight-server/gateway'
-require_relative '../lib/straight-server/orders_controller'
-require_relative '../lib/straight-server'
+require_relative '../lib/straight-server/order'
 
 require_relative 'support/custom_matchers'
 
 require "factory_girl"
 require_relative "factories"
 
-class StraightServer::Order
-  alias :save! :save
-end
-
+# class StraightServer::Order
+#   alias :save! :save
+# end
+#
 class StraightServer::Thread
-  def self.new(&block)
+  def self.new(label: nil, &block)
     block.call
+    {label: label}
   end
 end
 
