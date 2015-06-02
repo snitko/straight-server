@@ -121,7 +121,7 @@ module StraightServer
           attrs[:keychain_id] = reused_order.keychain_id 
         end
 
-        order = order_for_keychain_id(
+        order = new_order(
           amount:           attrs[:amount],
           keychain_id:      attrs[:keychain_id] || self.last_keychain_id+1,
           currency:         attrs[:currency],
@@ -131,6 +131,7 @@ module StraightServer
         order.data          = attrs[:data]          if attrs[:data]
         order.callback_data = attrs[:callback_data] if attrs[:callback_data]
         order.gateway       = self
+        order.description   = attrs[:description]
         order.reused        = reused_order.reused + 1 if reused_order
         order.save
 
@@ -330,9 +331,7 @@ module StraightServer
     include GatewayModule
     plugin :timestamps, create: :created_at, update: :updated_at
     plugin :serialization, :marshal, :exchange_rate_adapter_names
-    plugin :serialization, :marshal
     plugin :after_initialize
-
 
     def self.find_by_hashed_id(s)
       self.where(hashed_id: s).first
@@ -403,6 +402,10 @@ module StraightServer
       else
         raise "Decrypted and original secrets don't match! Cannot proceed with writing the encrypted gateway secret."
       end
+    end
+
+    def address_provider
+      Kernel.const_get("Straight::AddressProvider::#{self[:address_provider]}")
     end
 
     private
@@ -492,6 +495,10 @@ module StraightServer
       File.open(@last_keychain_id_file, 'w') {|f| f.write(last_keychain_id) }
     end
 
+    def address_provider
+      Kernel.const_get("Straight::AddressProvider::#{@address_provider}")
+    end
+
     # This method is a replacement for the Sequel's model one used in DB version of the gateway
     # and it finds gateways using the index of @@gateways Array.
     def self.find_by_id(id)
@@ -517,6 +524,7 @@ module StraightServer
       gateway.default_currency               = attrs['default_currency']
       gateway.orders_expiration_period       = attrs['orders_expiration_period']
       gateway.active                         = attrs['active']
+      gateway.address_provider               = attrs['address_provider'] || "Bip32"
       gateway.name                     = name
       gateway.id                       = i
       gateway.exchange_rate_adapter_names = attrs['exchange_rate_adapters']

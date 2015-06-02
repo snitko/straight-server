@@ -5,7 +5,7 @@ RSpec.describe StraightServer::OrdersController do
   before(:each) do
     DB.run("DELETE FROM orders")
     @gateway = gateway = StraightServer::Gateway.find_by_id(2)
-    allow(gateway).to receive(:address_for_keychain_id).and_return("address#{gateway.last_keychain_id+1}")
+    allow(gateway).to receive_message_chain("address_provider.new_address").and_return("address#{gateway.last_keychain_id+1}")
     allow(gateway).to receive(:fetch_transactions_for).with(anything).and_return([])
     allow(gateway).to receive(:send_callback_http_request)
   end
@@ -18,10 +18,16 @@ RSpec.describe StraightServer::OrdersController do
       expect(response).to render_json_with(status: 0, amount: 10, address: "address1", tid: nil, id: :anything, keychain_id: @gateway.last_keychain_id, last_keychain_id: @gateway.last_keychain_id)
     end
 
-    it "renders 409 error when an order cannot be created due to some validation errors" do
+    it "renders 409 error when an order cannot be created due to invalid amount" do
       send_request "POST", '/gateways/2/orders', amount: 0
       expect(response[0]).to eq(409)
-      expect(response[2]).to eq("Invalid order: amount should be more than 0")
+      expect(response[2]).to eq("Invalid order: amount cannot be nil and should be more than 0")
+    end
+
+    it "renders 409 error when an order cannot be created due to other validation errors" do
+      send_request "POST", '/gateways/2/orders', amount: 1, description: String.random(257)
+      expect(response[0]).to eq(409)
+      expect(response[2]).to eq("Invalid order: description should be shorter than 255 charachters")
     end
 
     it "starts tracking the order status in a separate thread" do
