@@ -45,7 +45,8 @@ module StraightServer
           keychain_id:      @params['keychain_id'],
           signature:        @params['signature'],
           callback_data:    @params['callback_data'],
-          data:             @params['data']
+          data:             @params['data'],
+          description:      @params['description']
         }
         order = @gateway.create_order(order_data)
         StraightServer::Thread.new(label: order.payment_id) do
@@ -64,6 +65,8 @@ module StraightServer
           "#{e.message.split(",").each_with_index.map { |e,i| "#{i+1}. #{e.lstrip}"}.join("\n") }\n" +
           "Order data: #{order_data.inspect}\n"
         )
+        [409, {}, "Invalid order: #{e.message}" ]
+      rescue Straight::Gateway::OrderAmountInvalid => e
         [409, {}, "Invalid order: #{e.message}" ]
       rescue StraightServer::GatewayModule::InvalidSignature
         [409, {}, "Invalid signature for id: #{@params['order_id']}" ]
