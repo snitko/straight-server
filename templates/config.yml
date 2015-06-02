@@ -50,6 +50,9 @@ gateways:
     default_currency: 'BTC'
     orders_expiration_period: 600 # seconds
 
+    # address_provider: 'Bip32'
+    # address_derivation_scheme: 'm/0/n'
+
     # This options decides whether we should also check the DB for status updates first
     # when we check order status. That is, if we're tracking an order and this option
     # is set to true, it first fetches the fields from the local DB, sees if the status has changed there,
