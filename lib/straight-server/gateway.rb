@@ -120,9 +120,10 @@ module StraightServer
         if reused_order = find_reusable_order
           attrs[:keychain_id] = reused_order.keychain_id
         end
+        attrs[:keychain_id] = nil if attrs[:keychain_id] && attrs[:keychain_id].empty?
 
         order = new_order(
-          amount:           attrs[:amount],
+          amount:           attrs[:amount].to_f,
           keychain_id:      attrs[:keychain_id] || self.last_keychain_id+1,
           currency:         attrs[:currency],
           btc_denomination: attrs[:btc_denomination]
