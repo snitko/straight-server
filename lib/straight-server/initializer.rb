@@ -116,6 +116,7 @@ module StraightServer
     end
 
     def create_logger
+      return unless Config.logmaster
       require_relative 'logger'
       StraightServer.logger = StraightServer::Logger.new(
         log_level:       ::Logger.const_get(Config.logmaster['log_level'].upcase),
