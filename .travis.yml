@@ -5,4 +5,4 @@ rvm:
 services:
   - redis-server
 notifications:
-  slack: straight-payments:ovM1xPrG9BmKTHGkM0k42gkP
+  slack: mycelium-gear:ovM1xPrG9BmKTHGkM0k42gkP
