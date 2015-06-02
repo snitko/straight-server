@@ -75,21 +75,30 @@ RSpec.describe StraightServer::Order do
 
   it "returns last_keychain_id for the gateway along with other order data" do
     order = create(:order, gateway_id: @gateway.id)
-    expect(order.to_h).to include(keychain_id: order.keychain_id, last_keychain_id: @gateway.last_keychain_id) 
+    expect(order.to_h).to include(keychain_id: order.keychain_id, last_keychain_id: @gateway.last_keychain_id)
+  end
+
+  it 'is cancelable only while new' do
+    order = build(:order, gateway_id: @gateway.id, status: 0)
+    expect(order.cancelable?).to eq true
+    (1..6).each do |status|
+      order.instance_variable_set :@status, status
+      expect(order.cancelable?).to eq false
+    end
   end
 
   describe "DB interaction" do
 
     it "saves a new order into the database" do
-      expect(DB[:orders][:keychain_id => @order.id]).not_to be_nil 
+      expect(DB[:orders][:keychain_id => @order.id]).not_to be_nil
     end
 
     it "updates an existing order" do
       allow(@order).to receive(:gateway).and_return(@gateway)
-      expect(DB[:orders][:keychain_id => @order.id][:status]).to eq(0) 
+      expect(DB[:orders][:keychain_id => @order.id][:status]).to eq(0)
       @order.status = 1
       @order.save
-      expect(DB[:orders][:keychain_id => @order.id][:status]).to eq(1) 
+      expect(DB[:orders][:keychain_id => @order.id][:status]).to eq(1)
     end
 
     it "finds first order in the database by id" do
@@ -103,7 +112,7 @@ RSpec.describe StraightServer::Order do
     it "finds orders in the database by any conditions" do
       order1 = create(:order, gateway_id: @gateway.id)
       order2 = create(:order, gateway_id: @gateway.id)
-      
+
       expect(StraightServer::Order.where(keychain_id: order1.keychain_id).first).to equal_order(order1)
       expect(StraightServer::Order.where(keychain_id: order2.keychain_id).first).to equal_order(order2)
       expect(StraightServer::Order.where(keychain_id: order2.keychain_id+1).first).to be_nil

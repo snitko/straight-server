@@ -35,7 +35,7 @@ Installation
 ------------
 I currently only tested it on Unix machines.
 
-1. Install RVM and Ruby 2.1 (see [RVM guide](http://rvm.io/rvm/install))
+1. Install RVM, Ruby 2.1 (see [RVM guide](http://rvm.io/rvm/install)) and Redis.
 
 2. run `gem install straight-server`
 
@@ -267,29 +267,39 @@ to query the blockchain.
 Counting orders
 ---------------
 For easy statistics and reports, it is desirable to know how many orders of each particular status each gateway has.
-For that reason optional order counters are implemented. To enable order counters, you must first install manually *redis-server*
-and then *redis* rubygem.
+For that reason optional order counters are implemented. To enable order counters, make sure the following options are set:
 
-Then edit your config file and make sure the following options are set:
-
-    environment: development # name your environment here
     count_orders: true       # enable order counting feature
-
-    redis:
-      host: localhost
-      port: 6379
-      db:       null # change to 1, 2, 3 etc. or leave as is
-      password: null # if no password is needed, leave as is
 
 After restarting the server, you can use `Gateway#order_counters` method which will
 return a hash of all the counters. Here's an example output:
 
-    { new: 132, unconfirmed: 0, paid: 34, underpaid: 1, overpaid: 2, expired: 55 }
+    { new: 132, unconfirmed: 0, paid: 34, underpaid: 1, overpaid: 2, expired: 55, canceled: 10 }
 
 The default behaviour is to cache the output, so if you want fresh values, use `reload: true`
 option on this method:
 
     Gateway#order_counters(reload: true)
+
+Throttling
+----------
+
+If Gateway does not require signature check (e.g. it's a public widget), you may wish to limit orders creation.
+This may help to mitigate potential DoS attacks.
+In order to enable throttler, edit your config file and make sure the following options are set:
+
+    throttle:
+      requests_limit: 21
+      period: 60
+      ip_ban_duration: 300
+
+This will allow maximum 21 new orders per 60 seconds per gateway to be created.
+`ip_ban_duration` is optional and prevents users from the banned IP (think of NAT) to create orders via any gateway for 300 seconds.
+When using this option, make sure that `HTTP_X_FORWARDED_FOR` header contains end user's IP. For example, in nginx config:
+
+    proxy_set_header X-Forwarded-For $remote_addr;
+
+Also, check out [ngx_http_realip_module](http://nginx.org/en/docs/http/ngx_http_realip_module.html).
 
 Running in production
 ---------------------

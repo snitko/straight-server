@@ -2,12 +2,9 @@
 # useful when your run many gateways on the same server.
 gateways_source: config
 
+# Used for:
+# - scoping Redis keys
 environment: development
-
-# This enabled order counting using Redis. Please see he README file for details.
-# You're gonna need to install redis-server and redis rubygem on your system and provide
-# redis-server connection details below.
-count_orders: false
 
 # When you display a payment window to a user, he has some time to pay. But what if a
 # transaction has been made in the last seconds and Straight didn't have time to detect it?
@@ -24,6 +21,9 @@ expiration_overtime: 30
 # technically receive the money, but it's never detected by the wallet.
 reuse_address_orders_threshold: 20
 
+# Comment out to disable orders counting.
+count_orders: true
+
 # Uncomment this if you want to limit orders creation rate.
 # For example, if user's cat makes more than 21 new orders during 60 seconds (from the same IP and Widget),
 # any user with this IP will be unable to create more orders via this Widget during those 60 seconds
@@ -33,11 +33,9 @@ reuse_address_orders_threshold: 20
 #  period: 60           # in seconds
 #  ip_ban_duration: 300 # in seconds
 
-# Uncomment this if you want to use Gateway's order counters feature
-# It requires redis.
-#redis:
-  #host: localhost
-  #port: 6380
+redis:
+  host: localhost
+  port: 6379
   #db:       null # change to 1, 2, 3 etc. or leave as is
   #password: null # if no password is needed, leave as is
 

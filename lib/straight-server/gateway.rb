@@ -7,7 +7,7 @@ module StraightServer
     # Temporary fix for straight server benchmarking
     @@redis = StraightServer::Config.redis[:connection] if StraightServer::Config.redis
     @@websockets = {}
-    
+
     def fetch_transactions_for(address)
       try_adapters(@blockchain_adapters, type: 'blockchain') { |b| b.fetch_transactions_for(address) }
     end
@@ -56,7 +56,7 @@ module StraightServer
         self.exchange_rate_adapter_names.each do |adapter|
           begin
             @exchange_rate_adapters << Straight::ExchangeRate.const_get("#{adapter}Adapter").instance
-          rescue NameError => e 
+          rescue NameError => e
             puts "WARNING: No exchange rate adapter with the name #{adapter} was found!"
           end
         end
@@ -101,8 +101,8 @@ module StraightServer
     end
     #
     ############# END OF Initializers methods ##################################################
- 
-    
+
+
     # Creates a new order and saves into the DB. Checks if the MD5 hash
     # is correct first.
     def create_order(attrs={})
@@ -118,7 +118,7 @@ module StraightServer
         # keychain_id that was used in the order we're reusing.
         # The address will be generated correctly.
         if reused_order = find_reusable_order
-          attrs[:keychain_id] = reused_order.keychain_id 
+          attrs[:keychain_id] = reused_order.keychain_id
         end
 
         order = new_order(
@@ -199,7 +199,8 @@ module StraightServer
         paid:        get_order_counter(:paid),
         underpaid:   get_order_counter(:underpaid),
         overpaid:    get_order_counter(:overpaid),
-        expired:     get_order_counter(:expired)
+        expired:     get_order_counter(:expired),
+        canceled:    get_order_counter(:canceled),
       }
     end
 
@@ -261,7 +262,7 @@ module StraightServer
             StraightServer.logger.warn "Callback request for order #{order.id} failed, see order's #callback_response field for details"
           end
         end
-        
+
         StraightServer.logger.info "Callback request for order #{order.id} performed successfully"
       end
 
@@ -288,7 +289,7 @@ module StraightServer
       #     Return the row of expired orders - which is not enough to trigger a reuse
       #     (the triger is in the #find_reusable_order method, which calls this one).
       def find_expired_orders_row
-        
+
         orders = []
         row    = nil
         offset = 0
@@ -299,7 +300,7 @@ module StraightServer
           row.reject! do |o|
             reject = false
             row.each do |o2|
-              reject = true if o.keychain_id == o2.keychain_id && o.reused < o2.reused 
+              reject = true if o.keychain_id == o2.keychain_id && o.reused < o2.reused
             end
             reject
           end
@@ -367,7 +368,7 @@ module StraightServer
       initialize_blockchain_adapters
       initialize_status_check_schedule
     end
-    
+
     # We cannot allow to store gateway secret in a DB plaintext, this would be completetly unsecure.
     # Althougth we use symmetrical encryption here and store the encryption key in the
     # server's in a special file (~/.straight/server_secret), which in turn can also be stolen,
@@ -392,9 +393,9 @@ module StraightServer
       raise "cipher.iv cannot be nil" unless iv
 
       encrypted        = cipher.update(self[:secret]) << cipher.final()
-      base64_encrypted = Base64.strict_encode64(encrypted).encode('utf-8') 
+      base64_encrypted = Base64.strict_encode64(encrypted).encode('utf-8')
       result           = "#{iv}:#{base64_encrypted}"
-      
+
       # Check whether we can decrypt. It should not be possible to encrypt the
       # gateway secret unless we are sure we can decrypt it.
       if decrypt_secret(result) == self[:secret]
@@ -454,7 +455,7 @@ module StraightServer
 
     attr_accessor :exchange_rate_adapter_names
     attr_accessor :orders_expiration_period
-   
+
     # This affects whether it is possible to create a new order with the gateway.
     # If it's set to false, then it won't be possible to create a new order, but
     # it will keep checking on the existing ones.
