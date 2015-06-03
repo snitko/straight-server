@@ -4,8 +4,6 @@ module StraightServer
   # in one of the classes below.
   module GatewayModule
 
-    # Temporary fix for straight server benchmarking
-    @@redis = StraightServer::Config.redis[:connection] if StraightServer::Config.redis
     @@websockets = {}
 
     def fetch_transactions_for(address)
@@ -207,12 +205,12 @@ module StraightServer
 
     def get_order_counter(counter_name)
       raise OrderCountersDisabled unless StraightServer::Config.count_orders
-      @@redis.get("#{StraightServer::Config.redis[:prefix]}:gateway_#{id}:#{counter_name}_orders_counter").to_i || 0
+      StraightServer.redis_connection.get("#{StraightServer::Config.redis[:prefix]}:gateway_#{id}:#{counter_name}_orders_counter").to_i || 0
     end
 
     def increment_order_counter!(counter_name, by=1)
       raise OrderCountersDisabled unless StraightServer::Config.count_orders
-      @@redis.incrby("#{StraightServer::Config.redis[:prefix]}:gateway_#{id}:#{counter_name}_orders_counter", by)
+      StraightServer.redis_connection.incrby("#{StraightServer::Config.redis[:prefix]}:gateway_#{id}:#{counter_name}_orders_counter", by)
     end
 
     # If we have more than Config.reuse_address_orders_threshold i a row for this gateway,

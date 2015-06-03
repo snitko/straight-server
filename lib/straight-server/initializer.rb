@@ -190,14 +190,15 @@ module StraightServer
     # Loads redis gem and sets up key prefixes for order counters
     # for the current straight environment.
     def setup_redis_connection
+      raise "Redis not configured" unless Config.redis
       Config.redis = Config.redis.keys_to_sym
-      Config.redis[:connection] = Redis.new(
+      Config.redis[:prefix] ||= "StraightServer:#{Config.environment}"
+      StraightServer.redis_connection = Redis.new(
         host:     Config.redis[:host],
         port:     Config.redis[:port],
         db:       Config.redis[:db],
         password: Config.redis[:password]
       )
-      Config.redis[:prefix] ||= "StraightServer:#{Config.environment}"
     end
 
   end
