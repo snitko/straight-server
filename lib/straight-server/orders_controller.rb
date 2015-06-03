@@ -53,12 +53,10 @@ module StraightServer
           # Because this is a new thread, we have to wrap the code inside in #watch_exceptions
           # once again. Otherwise, no watching is done. Oh, threads!
           StraightServer.logger.watch_exceptions do
-            # FIXME: sometimes raises NoMethodError: undefined method `start_periodic_status_check' for Hash
             order.start_periodic_status_check
           end
         end
-        order = add_callback_data_warning(order)
-        [200, {}, order.to_json ]
+        [200, {}, add_callback_data_warning(order).to_json]
       rescue Sequel::ValidationFailed => e
         StraightServer.logger.warn(
           "VALIDATION ERRORS in order, cannot create it:\n" +
