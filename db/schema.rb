@@ -19,6 +19,7 @@ Sequel.migration do
       TrueClass :active, :default=>true
       String :order_counters, :size=>255
       String :hashed_id, :size=>255
+      String :address_provider, :default=>"Bip32", :size=>255
       
       index [:hashed_id]
       index [:id], :unique=>true
@@ -41,6 +42,7 @@ Sequel.migration do
       String :payment_id, :size=>255
       String :description, :size=>255
       Integer :reused, :default=>0
+      String :callback_data, :size=>255
       
       index [:address]
       index [:id], :unique=>true
