@@ -21,7 +21,7 @@ namespace :db do
   desc "Rollbacks database migrations"
   task :rollback, [:step] => :environment do |t, args|
     target = args[:step] && (step = args[:step].to_i) > 0 ?
-      current_migration_version - step : 0
+      current_migration_version - step : current_migration_version - 1
 
     Sequel::Migrator.run(StraightServer.db_connection, MIGRATIONS_ROOT, target: target)
     dump_schema
