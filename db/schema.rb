@@ -20,6 +20,7 @@ Sequel.migration do
       String :order_counters, :size=>255
       String :hashed_id, :size=>255
       String :address_provider, :default=>"Bip32", :size=>255
+      String :address_derivation_scheme, :size=>255
       
       index [:hashed_id]
       index [:id], :unique=>true

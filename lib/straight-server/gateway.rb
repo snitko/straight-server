@@ -525,6 +525,7 @@ module StraightServer
       gateway.orders_expiration_period       = attrs['orders_expiration_period']
       gateway.active                         = attrs['active']
       gateway.address_provider               = attrs['address_provider'] || "Bip32"
+      gateway.address_derivation_scheme      = attrs['address_derivation_scheme']
       gateway.name                     = name
       gateway.id                       = i
       gateway.exchange_rate_adapter_names = attrs['exchange_rate_adapters']
