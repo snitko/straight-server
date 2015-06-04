@@ -5,7 +5,7 @@ Sequel.migration do
   end
 
   down do
-    remove_column :gateways, :address_provider
+    drop_column :gateways, :address_provider
   end
 
 end

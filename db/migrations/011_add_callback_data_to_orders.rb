@@ -5,7 +5,7 @@ Sequel.migration do
   end
 
   down do
-    remove_column :orders, :callback_data
+    drop_column :orders, :callback_data
   end
 
 end
