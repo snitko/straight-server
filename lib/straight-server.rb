@@ -23,7 +23,7 @@ module StraightServer
   VERSION = File.read(File.expand_path('../', File.dirname(__FILE__)) + '/VERSION')
 
   class << self
-    attr_accessor :db_connection, :logger
+    attr_accessor :db_connection, :redis_connection, :logger
   end
 
 end

@@ -10,12 +10,12 @@ module StraightServer
     INTERRUPTION_FLAG = lambda { |label| "#{Config[:'redis.prefix']}:interrupt_thread:#{label}" }
 
     def self.interrupt(label:)
-      return unless (redis = Config[:'redis.connection'])
+      redis = StraightServer.redis_connection
       redis.set INTERRUPTION_FLAG[label], Time.now.to_i
     end
 
     def self.interrupted?(thread:)
-      return unless (redis = Config[:'redis.connection'])
+      redis  = StraightServer.redis_connection
       result = redis.get(key = INTERRUPTION_FLAG[thread[:label]])
       redis.del key if result
       !!result

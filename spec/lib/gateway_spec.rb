@@ -211,7 +211,7 @@ RSpec.describe StraightServer::Gateway do
       allow(@gateway).to receive(:send_callback_http_request)
       allow(@gateway).to receive(:send_order_to_websocket_client)
       order = create(:order, gateway_id: @gateway.id)
-      expect(StraightServer::Config.redis[:connection].get("#{StraightServer::Config.redis[:prefix]}:gateway_#{@gateway.id}:new_orders_counter")).to be_nil
+      expect(StraightServer.redis_connection.get("#{StraightServer::Config.redis[:prefix]}:gateway_#{@gateway.id}:new_orders_counter")).to be_nil
     end
 
   end
