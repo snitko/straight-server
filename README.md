@@ -356,14 +356,20 @@ adding controllers and routes for them. Now let's look at how we should do that:
 
 1. All addons are placed under `~/.straight/addons/` (of course, it is wise to use symlinks).
 
-2. `./straight/addons.yml` file lists addons and tells straight-server what are the names of the files to be loaded.
+2. `~/.straight/addons.yml` file lists addons and tells straight-server what are the names of the files to be loaded.
 The format of the file is the following:
+
 
     my_addon                             # <- name doesn't affect anything, just shows up in the log file
       path: addons/my_addon/lib/my_addon # <- This is unnecessary if addon is already in the LOAD_PATH
       module: MyAddon                    # <- actual module should be a submodule of StraightServer::Addon
 
-3. In `./straight/addons/my_addon/lib/` we will place two files, `my_addon.rb` and 'my_controller.rb'. Below is their contents:
+3. If addon has dependencies, they can be listed in `~/.straight/AddonsGemfile` and will be installed along with `straight-server` dependencies.
+
+
+    eval_gemfile '/home/app/.straight/addons/my_addon/Gemfile'
+
+4. In `./straight/addons/my_addon/lib/` we will place two files, `my_addon.rb` and 'my_controller.rb'. Below is their contents:
 
 
     # my_addon.rb
