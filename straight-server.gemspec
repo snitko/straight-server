@@ -11,7 +11,7 @@ Gem::Specification.new do |s|
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.require_paths = ["lib"]
   s.authors = ["Roman Snitko"]
-  s.date = "2015-05-30"
+  s.date = "2015-06-09"
   s.description = "Accepts orders via http, returns payment info via http or streams updates via websockets, stores orders in a DB"
   s.email = "roman.snitko@gmail.com"
   s.executables = ["straight-console", "straight-server", "straight-server-benchmark"]
@@ -48,6 +48,8 @@ Gem::Specification.new do |s|
     "db/migrations/009_add_hashed_id_to_gateways.rb",
     "db/migrations/010_add_address_reusability_orders.rb",
     "db/migrations/011_add_callback_data_to_orders.rb",
+    "db/migrations/012_add_address_provider.rb",
+    "db/migrations/013_add_address_derivation_scheme.rb",
     "db/schema.rb",
     "examples/client/client.dart",
     "examples/client/client.html",
@@ -74,6 +76,7 @@ Gem::Specification.new do |s|
     "spec/lib/initializer_spec.rb",
     "spec/lib/order_spec.rb",
     "spec/lib/orders_controller_spec.rb",
+    "spec/lib/thread_spec.rb",
     "spec/lib/throttle_spec.rb",
     "spec/lib/utils/hash_string_to_sym_keys.rb",
     "spec/spec_helper.rb",
@@ -91,7 +94,7 @@ Gem::Specification.new do |s|
     s.specification_version = 4
 
     if Gem::Version.new(Gem::VERSION) >= Gem::Version.new('1.2.0') then
-      s.add_runtime_dependency(%q<straight>, [">= 0"])
+      s.add_runtime_dependency(%q<straight>, ["= 0.2.3"])
       s.add_runtime_dependency(%q<satoshi-unit>, [">= 0"])
       s.add_runtime_dependency(%q<goliath>, [">= 0"])
       s.add_runtime_dependency(%q<faye-websocket>, [">= 0"])
@@ -100,11 +103,12 @@ Gem::Specification.new do |s|
       s.add_runtime_dependency(%q<ruby-hmac>, [">= 0"])
       s.add_runtime_dependency(%q<httparty>, [">= 0"])
       s.add_runtime_dependency(%q<money-tree>, ["= 0.9.0"])
+      s.add_development_dependency(%q<byebug>, [">= 0"])
       s.add_development_dependency(%q<bundler>, ["~> 1.0"])
       s.add_development_dependency(%q<jeweler>, ["~> 2.0.1"])
       s.add_development_dependency(%q<github_api>, ["= 0.11.3"])
     else
-      s.add_dependency(%q<straight>, [">= 0"])
+      s.add_dependency(%q<straight>, ["= 0.2.3"])
       s.add_dependency(%q<satoshi-unit>, [">= 0"])
       s.add_dependency(%q<goliath>, [">= 0"])
       s.add_dependency(%q<faye-websocket>, [">= 0"])
@@ -113,12 +117,13 @@ Gem::Specification.new do |s|
       s.add_dependency(%q<ruby-hmac>, [">= 0"])
       s.add_dependency(%q<httparty>, [">= 0"])
       s.add_dependency(%q<money-tree>, ["= 0.9.0"])
+      s.add_dependency(%q<byebug>, [">= 0"])
       s.add_dependency(%q<bundler>, ["~> 1.0"])
       s.add_dependency(%q<jeweler>, ["~> 2.0.1"])
       s.add_dependency(%q<github_api>, ["= 0.11.3"])
     end
   else
-    s.add_dependency(%q<straight>, [">= 0"])
+    s.add_dependency(%q<straight>, ["= 0.2.3"])
     s.add_dependency(%q<satoshi-unit>, [">= 0"])
     s.add_dependency(%q<goliath>, [">= 0"])
     s.add_dependency(%q<faye-websocket>, [">= 0"])
@@ -127,6 +132,7 @@ Gem::Specification.new do |s|
     s.add_dependency(%q<ruby-hmac>, [">= 0"])
     s.add_dependency(%q<httparty>, [">= 0"])
     s.add_dependency(%q<money-tree>, ["= 0.9.0"])
+    s.add_dependency(%q<byebug>, [">= 0"])
     s.add_dependency(%q<bundler>, ["~> 1.0"])
     s.add_dependency(%q<jeweler>, ["~> 2.0.1"])
     s.add_dependency(%q<github_api>, ["= 0.11.3"])
