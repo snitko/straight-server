@@ -87,8 +87,10 @@ module StraightServer
       @order_callbacks = [
         lambda do |order|
           StraightServer::Thread.new do
-            send_callback_http_request     order
             send_order_to_websocket_client order
+          end
+          StraightServer::Thread.new do
+            send_callback_http_request order
           end
         end
       ]
