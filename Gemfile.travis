@@ -1,6 +1,6 @@
 source "http://rubygems.org"
 
-gem "straight", git: "https://github.com/snitko/straight.git"
+gem "straight", github: "snitko/straight"
 gem "satoshi-unit"
 gem "goliath"
 gem "faye-websocket"

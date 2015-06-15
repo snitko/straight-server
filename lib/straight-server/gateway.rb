@@ -405,7 +405,7 @@ module StraightServer
     end
 
     def address_provider
-      Kernel.const_get("Straight::AddressProvider::#{self[:address_provider]}")
+      Kernel.const_get("Straight::AddressProvider::#{self[:address_provider]}").new(self)
     end
 
     private
@@ -496,7 +496,7 @@ module StraightServer
     end
 
     def address_provider
-      Kernel.const_get("Straight::AddressProvider::#{@address_provider}")
+      Kernel.const_get("Straight::AddressProvider::#{@address_provider}").new(self)
     end
 
     # This method is a replacement for the Sequel's model one used in DB version of the gateway

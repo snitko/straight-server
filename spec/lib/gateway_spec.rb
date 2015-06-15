@@ -34,7 +34,6 @@ RSpec.describe StraightServer::Gateway do
 
   it "sets order amount in satoshis calculated from another currency" do
     @gateway = StraightServer::GatewayOnConfig.find_by_id(2)
-    allow(@gateway).to receive(:address_for_keychain_id).and_return('address')
     allow(@gateway.exchange_rate_adapters.first).to receive(:rate_for).and_return(450.5412)
     expect(@gateway.create_order(amount: 2252.706, currency: 'USD').amount).to eq(500000000)
   end
@@ -90,7 +89,7 @@ RSpec.describe StraightServer::Gateway do
       reused_order = @expired_orders_1.last
       order        = @gateway.create_order(amount: 2252.706, currency: 'USD')
       expect(order.keychain_id).to eq(reused_order.keychain_id)
-      expect(order.address).to     eq(@gateway.address_provider.new_address({ keychain_id: reused_order.keychain_id }, @gateway))
+      expect(order.address).to     eq(@gateway.address_provider.new_address(keychain_id: reused_order.keychain_id))
       expect(order.reused).to      eq(1)
     end
 
