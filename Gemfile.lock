@@ -153,6 +153,3 @@ DEPENDENCIES
   sqlite3
   straight (= 0.2.3)!
   timecop
-
-BUNDLED WITH
-   1.10.3
