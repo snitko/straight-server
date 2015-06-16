@@ -20,7 +20,7 @@ end
 
 group :test do
   gem 'timecop'
-  gem 'rspec'
+  gem 'rspec', '3.2.0'
   gem 'factory_girl'
   gem 'sqlite3'
   gem 'hashie'
