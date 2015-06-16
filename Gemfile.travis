@@ -1,6 +1,6 @@
 source "http://rubygems.org"
 
-gem "straight", git: "https://github.com/snitko/straight.git"
+gem "straight", github: "snitko/straight"
 gem "satoshi-unit"
 gem "goliath"
 gem "faye-websocket"
@@ -20,7 +20,7 @@ end
 
 group :test do
   gem 'timecop'
-  gem 'rspec'
+  gem 'rspec', '3.2.0'
   gem 'factory_girl'
   gem 'sqlite3'
   gem 'hashie'

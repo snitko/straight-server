@@ -87,8 +87,10 @@ module StraightServer
       @order_callbacks = [
         lambda do |order|
           StraightServer::Thread.new do
-            send_callback_http_request     order
             send_order_to_websocket_client order
+          end
+          StraightServer::Thread.new do
+            send_callback_http_request order
           end
         end
       ]
@@ -405,7 +407,7 @@ module StraightServer
     end
 
     def address_provider
-      Kernel.const_get("Straight::AddressProvider::#{self[:address_provider]}")
+      Kernel.const_get("Straight::AddressProvider::#{self[:address_provider]}").new(self)
     end
 
     private
@@ -496,7 +498,7 @@ module StraightServer
     end
 
     def address_provider
-      Kernel.const_get("Straight::AddressProvider::#{@address_provider}")
+      Kernel.const_get("Straight::AddressProvider::#{@address_provider}").new(self)
     end
 
     # This method is a replacement for the Sequel's model one used in DB version of the gateway
