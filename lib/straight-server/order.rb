@@ -57,7 +57,15 @@ module StraightServer
           self.gateway.order_status_changed(self)
         end
       end
+      set_amount_paid if paid_order?
       self[:status] = @status
+    end
+
+    def set_amount_paid
+      # make tests happy, but not developers
+      if t = transaction(reload: true)
+        self.amount_paid = t[:total_amount]
+      end
     end
 
     def cancelable?
@@ -76,7 +84,12 @@ module StraightServer
     end
 
     def to_h
-      super.merge({ id: id, payment_id: payment_id, amount_in_btc: amount_in_btc(as: :string), keychain_id: keychain_id, last_keychain_id: self.gateway.last_keychain_id })
+      super.merge({ id: id,
+                    payment_id: payment_id,
+                    amount_in_btc: amount_in_btc(as: :string),
+                    amount_paid_in_btc: amount_in_btc(field: amount_paid,as: :string),
+                    keychain_id: keychain_id,
+                    last_keychain_id: self.gateway.last_keychain_id })
     end
 
     def to_json
@@ -85,17 +98,18 @@ module StraightServer
 
     def validate
       super # calling Sequel::Model validator
-      errors.add(:amount,     "is not numeric") if !amount.kind_of?(Numeric)
-      errors.add(:amount,     "should be more than 0") if amount && amount <= 0
-      errors.add(:gateway_id, "is invalid") if !gateway_id.kind_of?(Numeric) || gateway_id <= 0
+      errors.add(:amount,      "is not numeric") if !amount.kind_of?(Numeric)
+      errors.add(:amount,      "should be more than 0") if amount && amount <= 0
+      errors.add(:amount_paid, "is not numeric") if !amount.kind_of?(Numeric)
+      errors.add(:gateway_id,  "is invalid") if !gateway_id.kind_of?(Numeric) || gateway_id <= 0
       errors.add(:description, "should be shorter than 255 charachters") if description.kind_of?(String) && description.length > 255
-      errors.add(:gateway, "is inactive, cannot create order for inactive gateway") unless gateway.active
+      errors.add(:gateway,     "is inactive, cannot create order for inactive gateway") unless gateway.active
       validates_unique   :id
       validates_presence [:address, :keychain_id, :gateway_id, :amount]
     end
 
     def to_http_params
-      "order_id=#{id}&amount=#{amount}&amount_in_btc=#{amount_in_btc(as: :string)}&status=#{status}&address=#{address}&tid=#{tid}&keychain_id=#{keychain_id}&last_keychain_id=#{@gateway.last_keychain_id}"
+      "order_id=#{id}&amount=#{amount}&amount_in_btc=#{amount_in_btc(as: :string)}&amount_paid_in_btc=#{amount_in_btc(field: amount_paid, as: :string)}&status=#{status}&address=#{address}&tid=#{tid}&keychain_id=#{keychain_id}&last_keychain_id=#{@gateway.last_keychain_id}"
     end
 
     def before_create

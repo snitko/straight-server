@@ -44,6 +44,9 @@ Sequel.migration do
       String :description, :size=>255
       Integer :reused, :default=>0
       String :callback_data, :size=>255
+      String :amount_paid
+      String :callback_url, :size=>255
+      String :title, :size=>255
       
       index [:address]
       index [:id], :unique=>true
