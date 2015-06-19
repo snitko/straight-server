@@ -169,6 +169,15 @@ RSpec.describe StraightServer::Gateway do
       expect(@order.callback_response).to eq({code: "200", body: "body"})
     end
 
+    it "is use callback_url from order when making callback" do
+      order = @gateway.create_order(amount: 1, callback_url: 'http://new_url')
+      expect(@response_mock).to receive(:code).twice.and_return("200")
+      expect(URI).to receive(:parse).with('http://new_url?' + order.to_http_params)
+                      .and_return('parsed_uri')
+      expect(Net::HTTP).to receive(:get_response).with('parsed_uri').and_return(@response_mock)
+      @gateway.order_status_changed(order)
+    end
+
   end
 
   describe "order counters" do
