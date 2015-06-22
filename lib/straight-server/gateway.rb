@@ -131,6 +131,8 @@ module StraightServer
         order.id            = attrs[:id].to_i       if attrs[:id]
         order.data          = attrs[:data]          if attrs[:data]
         order.callback_data = attrs[:callback_data] if attrs[:callback_data]
+        order.title         = attrs[:title]         if attrs[:title]
+        order.callback_url  = attrs[:callback_url]  if attrs[:callback_url]
         order.gateway       = self
         order.description   = attrs[:description]
         order.reused        = reused_order.reused + 1 if reused_order
@@ -237,18 +239,20 @@ module StraightServer
     private
 
       # Tries to send a callback HTTP request to the resource specified
-      # in the #callback_url. If it fails for any reason, it keeps trying for an hour (3600 seconds)
+      # in the #callback_url. Use #callback_url given to Order if it exist, otherwise default.
+      # If it fails for any reason, it keeps trying for an hour (3600 seconds)
       # making 10 http requests, each delayed by twice the time the previous one was delayed.
       # This method is supposed to be running in a separate thread.
       def send_callback_http_request(order, delay: 5)
-        return if callback_url.nil?
+        _callback_url = order.callback_url.nil? ? self.callback_url : order.callback_url
+        return if _callback_url.nil?
 
-        StraightServer.logger.info "Attempting to send request to the callback url for order #{order.id} to #{callback_url}..."
+        StraightServer.logger.info "Attempting to send request to the callback url for order #{order.id} to #{_callback_url}..."
 
         # Composing the request uri here
         signature = self.check_signature ? "&signature=#{sign_with_secret(order.id)}" : ''
         callback_data = order.callback_data ? "&callback_data=#{order.callback_data}" : ''
-        uri           = URI.parse(callback_url + '?' + order.to_http_params + signature + callback_data)
+        uri           = URI.parse(_callback_url + '?' + order.to_http_params + signature + callback_data)
 
         begin
           response = Net::HTTP.get_response(uri)
