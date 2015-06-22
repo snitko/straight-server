@@ -50,6 +50,7 @@ Gem::Specification.new do |s|
     "db/migrations/011_add_callback_data_to_orders.rb",
     "db/migrations/012_add_address_provider.rb",
     "db/migrations/013_add_address_derivation_scheme.rb",
+    "db/migrations/015_add_amoun_paid_to_orders.rb",
     "db/schema.rb",
     "examples/client/client.dart",
     "examples/client/client.html",

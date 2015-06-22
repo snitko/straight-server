@@ -7,6 +7,7 @@ RSpec.describe StraightServer::Gateway do
     @order_mock = double("order mock")
     allow(@order_mock).to receive(:old_status)
     allow(@order_mock).to receive(:description=)
+    allow(@order_mock).to receive(:set_amount_paid)
     allow(@order_mock).to receive(:reused).and_return(0)
     [:id, :gateway=, :save, :to_h, :id=].each { |m| allow(@order_mock).to receive(m) }
     @new_order_args = { amount: 1, keychain_id: 1, currency: nil, btc_denomination: nil }

@@ -1,3 +1,4 @@
+# coding: utf-8
 require 'spec_helper'
 
 RSpec.describe StraightServer::Order do
@@ -15,7 +16,7 @@ RSpec.describe StraightServer::Order do
     allow(@gateway).to receive(:default_currency).and_return('USD')
     allow(@gateway).to receive(:last_keychain_id).and_return(222)
     @order = create(:order, gateway_id: @gateway.id)
-    allow(@gateway).to receive(:fetch_transactions_for).with(anything).and_return([])
+    allow(@gateway).to receive(:fetch_transactions_for).with(anything).and_return([{total_amount: 10}])
     allow(@gateway).to receive(:order_status_changed).with(anything)
     allow(@gateway).to receive(:sign_with_secret).with(anything).and_return("1", "2", "3")
     allow(StraightServer::Gateway).to receive(:find_by_id).and_return(@gateway)
@@ -29,7 +30,7 @@ RSpec.describe StraightServer::Order do
 
   it "prepares data as http params" do
     allow(@order).to receive(:tid).and_return("tid1")
-    expect(@order.to_http_params).to eq("order_id=#{@order.id}&amount=10&amount_in_btc=#{@order.amount_in_btc(as: :string)}&status=#{@order.status}&address=#{@order.address}&tid=tid1&keychain_id=#{@order.keychain_id}&last_keychain_id=#{@order.gateway.last_keychain_id}")
+    expect(@order.to_http_params).to eq("order_id=#{@order.id}&amount=10&amount_in_btc=#{@order.amount_in_btc(as: :string)}&amount_paid_in_btc=#{@order.amount_in_btc(field: @order.amount_paid, as: :string)}&status=#{@order.status}&address=#{@order.address}&tid=tid1&keychain_id=#{@order.keychain_id}&last_keychain_id=#{@order.gateway.last_keychain_id}")
   end
 
   it "generates a payment_id" do
@@ -46,9 +47,10 @@ RSpec.describe StraightServer::Order do
   end
 
   it "checks DB for a status update first if the respective option for the gateway is turned on" do
-    allow(@order).to receive(:transaction).and_raise("Shouldn't ever be happening!")
+    # allow(@order).to receive(:transaction).and_raise("Shouldn't ever be happening!")
     StraightServer::Config.check_order_status_in_db_first = true
     StraightServer::Order.where(id: @order.id).update(status: 2)
+    allow(@order.gateway).to receive(:fetch_transactions_for).and_return([])
     allow(@order.gateway).to receive(:order_status_changed)
     expect(@order.status(reload: false)).to eq(0)
     expect(@order.status(reload: true)).to eq(2)
@@ -85,6 +87,18 @@ RSpec.describe StraightServer::Order do
       order.instance_variable_set :@status, status
       expect(order.cancelable?).to eq false
     end
+  end
+
+  it 'is have be nil in amount_paid if order not paid' do
+    @order.status
+    expect(@order.amount_paid).to eq(nil)
+  end
+
+  it 'is have amount_paid set to total_amount if order paid' do
+    order = build(:order, gateway_id: @gateway.id, status: 0)
+    order.status = 3
+    order.status
+    expect(order.amount_paid).to eq(10)
   end
 
   describe "DB interaction" do
