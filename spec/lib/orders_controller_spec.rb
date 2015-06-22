@@ -5,6 +5,7 @@ RSpec.describe StraightServer::OrdersController do
   before(:each) do
     DB.run("DELETE FROM orders")
     @gateway = gateway = StraightServer::Gateway.find_by_id(2)
+    allow(gateway).to receive_message_chain("address_provider.takes_fees?").and_return(false)
     allow(gateway).to receive_message_chain("address_provider.new_address").and_return("address#{gateway.last_keychain_id+1}")
     allow(gateway).to receive(:fetch_transactions_for).with(anything).and_return([])
     allow(gateway).to receive(:send_callback_http_request)
@@ -65,7 +66,7 @@ RSpec.describe StraightServer::OrdersController do
     end
 
     it 'limits creation of orders without signature' do
-      new_config          = StraightServer::Config.dup
+      new_config          = StraightServer::Config.clone
       new_config.throttle = {requests_limit: 1, period: 1}
       stub_const 'StraightServer::Config', new_config
       allow(StraightServer::Thread).to receive(:new)
