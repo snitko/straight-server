@@ -16,7 +16,7 @@ RSpec.describe StraightServer::Order do
     allow(@gateway).to receive(:default_currency).and_return('USD')
     allow(@gateway).to receive(:last_keychain_id).and_return(222)
     @order = create(:order, gateway_id: @gateway.id)
-    allow(@gateway).to receive(:fetch_transactions_for).with(anything).and_return([{total_amount: 10}])
+    allow(@gateway).to receive(:fetch_transactions_for).with(anything).and_return([])
     allow(@gateway).to receive(:order_status_changed).with(anything)
     allow(@gateway).to receive(:sign_with_secret).with(anything).and_return("1", "2", "3")
     allow(StraightServer::Gateway).to receive(:find_by_id).and_return(@gateway)
@@ -87,18 +87,6 @@ RSpec.describe StraightServer::Order do
       order.instance_variable_set :@status, status
       expect(order.cancelable?).to eq false
     end
-  end
-
-  it 'is have be nil in amount_paid if order not paid' do
-    @order.status
-    expect(@order.amount_paid).to eq(nil)
-  end
-
-  it 'is have amount_paid set to total_amount if order paid' do
-    order = build(:order, gateway_id: @gateway.id, status: 0)
-    order.status = 3
-    order.status
-    expect(order.amount_paid).to eq(10)
   end
 
   describe "DB interaction" do

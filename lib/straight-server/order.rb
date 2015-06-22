@@ -57,15 +57,7 @@ module StraightServer
           self.gateway.order_status_changed(self)
         end
       end
-      set_amount_paid if paid_order?
       self[:status] = @status
-    end
-
-    def set_amount_paid
-      # make tests happy, but not developers
-      if t = transaction(reload: true)
-        self.amount_paid = t[:total_amount]
-      end
     end
 
     def cancelable?
