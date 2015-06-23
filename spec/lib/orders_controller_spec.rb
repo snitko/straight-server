@@ -205,6 +205,15 @@ RSpec.describe StraightServer::OrdersController do
     end
   end
 
+  it 'retutn last_keychain_id' do
+    lk_id = 123
+    @gateway = StraightServer::Gateway.find_by_id(1)
+    @gateway.last_keychain_id = lk_id
+    @gateway.save
+    send_request "GET", '/gateway/1/last_keychain_id'
+    expect(response).to render_json_with(gateway_id: @gateway.id, last_keychain_id: lk_id)
+  end
+
   def send_request(method, path, params={})
     env = Hashie::Mash.new({ 'REQUEST_METHOD' => method, 'REQUEST_PATH' => path, 'params' => params })
     @controller = StraightServer::OrdersController.new(env)

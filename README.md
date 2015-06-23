@@ -112,6 +112,15 @@ its creation time in `#created_at` field. In turn, each order's gateway has a fi
 depending on what approach to storing gateways you use). After this time has passed, straight-server stops
 checking whether new transactions appear on the order's bitcoin address and also changes order's status to 5 (expired).
 
+**Get last keychain id**
+You can get last keychain id for gateway with the following request:
+
+    GET /gateway/1/last_keychain_id
+
+The request above return something like:
+
+    {"gateway_id": 1, "last_keychain_id": "11"}
+
 Implications of restarting the server
 -------------------------------------
 

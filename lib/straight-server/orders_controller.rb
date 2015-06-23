@@ -131,6 +131,15 @@ module StraightServer
       end
     end
 
+    def last_keychain_id
+      unless @gateway
+        StraightServer.logger.warn "Gateway not foun"
+        return [404, {}, "Gateway not found"]
+      end
+
+      [200, {}, {gateway_id: @gateway.id, last_keychain_id: @gateway.last_keychain_id}.to_json]
+    end
+
     private
 
       # Refactoring proposed: https://github.com/AlexanderPavlenko/straight-server/commit/49ea6e3732a9564c04d8dfecaee6d0ebaa462042
@@ -151,6 +160,8 @@ module StraightServer
           elsif @request_path[4].nil? && @method == 'GET'
             show
           end
+        elsif @request_path[2] == 'last_keychain_id'
+            last_keychain_id
         elsif @request_path[3].nil?# && @method == 'POST'
           create
         end
