@@ -70,7 +70,7 @@ in the `~/.straight/config.yml` file for the current gateway. This callback requ
 
 Here's an example of a callback url request that could be made by Straight server when order status changes:
 
-    GET http://mystore.com/payment-callback?order_id=234&amount=1&status=2&address=1NZov2nm6gRCGW6r4q1qHtxXurrWNpPr1q&tid=tid1&callback_data=some+random+data&keychain_id=1&last_keychain_id=1
+    GET http://mystore.com/payment-callback?order_id=234&amount=1&amount_in_btc=0.00000001&amoint_paid_in_btc=0.00000001&status=2&address=1NZov2nm6gRCGW6r4q1qHtxXurrWNpPr1q&tid=tid1&callback_data=some+random+data&keychain_id=1&last_keychain_id=1
 
 As you may have noticed, there's a parameter called `callback_data`. It is a way for you to pass info back
 to your app. It will have the same value as the `callback_data` parameter you passed to the create order request:
@@ -96,7 +96,7 @@ where `:id` can either be order `id` (CAUTION: order `id` is NOT the same as `ke
 `payment_id` - both are returned in the json data when the order
 is created (see above). The request above may return something like:
 
-    {"status":2,"amount":1,"address":"1NZov2nm6gRCGW6r4q1qHtxXurrWNpPr1q","tid":"f0f9205e41bf1b79cb7634912e86bb840cedf8b1d108bd2faae1651ca79a5838","id":1, "keychain_id": 1, "last_keychain_id": 1 }
+    {"status":2,"amount":1,"address":"1NZov2nm6gRCGW6r4q1qHtxXurrWNpPr1q","tid":"f0f9205e41bf1b79cb7634912e86bb840cedf8b1d108bd2faae1651ca79a5838","id":1,"amount_in_btc": 0.00000001,"amount_paid_in_btc": 0.00000001,"keychain_id": 1,"last_keychain_id": 1 }
 
 **Subscribing to the order using websockets**:
 You can also subscribe to the order status changes using websockets at:
