@@ -10,25 +10,25 @@ module StraightServer
       try_adapters(@blockchain_adapters, type: 'blockchain') { |b| b.fetch_transactions_for(address) }
     end
 
-    class InvalidSignature           < Exception; end
-    class InvalidOrderId             < Exception; end
-    class CallbackUrlBadResponse     < Exception; end
-    class WebsocketExists            < Exception; end
-    class WebsocketForCompletedOrder < Exception; end
-    class GatewayInactive            < Exception; end
-    class NoBlockchainAdapters       < Exception
+    class InvalidSignature           < StraightServerError; end
+    class InvalidOrderId             < StraightServerError; end
+    class CallbackUrlBadResponse     < StraightServerError; end
+    class WebsocketExists            < StraightServerError; end
+    class WebsocketForCompletedOrder < StraightServerError; end
+    class GatewayInactive            < StraightServerError; end
+    class NoBlockchainAdapters       < StraightServerError
       def message
         "No blockchain adapters were found! StraightServer cannot query the blockchain.\n" +
         "Check your ~/.straight/config.yml file and make sure valid blockchain adapters\n" +
         "are present."
       end
     end
-    class NoWebsocketsForNewGateway  < Exception
+    class NoWebsocketsForNewGateway  < StraightServerError
       def message
         "You're trying to get access to websockets on a Gateway that hasn't been saved yet"
       end
     end
-    class OrderCountersDisabled      < Exception
+    class OrderCountersDisabled      < StraightServerError
       def message
         "Please enable order counting in config file! You can do is using the following option:\n\n" +
         "  count_orders: true\n\n" +
@@ -259,12 +259,12 @@ module StraightServer
           order.callback_response = { code: response.code, body: response.body }
           order.save
           raise CallbackUrlBadResponse unless response.code.to_i == 200
-        rescue Exception => e
+        rescue => ex
           if delay < CALLBACK_URL_ATTEMPT_TIMEFRAME
             sleep(delay)
             send_callback_http_request(order, delay: delay*2)
           else
-            StraightServer.logger.warn "Callback request for order #{order.id} failed, see order's #callback_response field for details"
+            StraightServer.logger.warn "Callback request for order #{order.id} failed with #{ex.inspect}, see order's #callback_response field for details"
           end
         end
 
