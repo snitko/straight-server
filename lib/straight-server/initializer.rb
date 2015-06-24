@@ -129,11 +129,11 @@ module StraightServer
 
     def initialize_routes
       @routes = {}
-      add_route %r{/\A\/gateways\/.+?\/orders(\/.+)?\Z/} do |env|
+      add_route %r{\A/gateways/.+?/orders(/.+)?\Z} do |env|
         controller = OrdersController.new(env)
         controller.response
       end
-      add_route %r{/\A\/gateways\/.*?\/last_keychain_id\Z/} do |env|
+      add_route %r{\A/gateways/.+?/last_keychain_id\Z} do |env|
         controller = OrdersController.new(env)
         controller.response
       end
