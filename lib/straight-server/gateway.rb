@@ -1,3 +1,5 @@
+require 'cgi'
+
 module StraightServer
 
   # This module contains common features of Gateway, later to be included
@@ -10,8 +12,6 @@ module StraightServer
       try_adapters(@blockchain_adapters, type: 'blockchain') { |b| b.fetch_transactions_for(address) }
     end
 
-    class InvalidSignature           < StraightServerError; end
-    class InvalidOrderId             < StraightServerError; end
     class CallbackUrlBadResponse     < StraightServerError; end
     class WebsocketExists            < StraightServerError; end
     class WebsocketForCompletedOrder < StraightServerError; end
@@ -110,42 +110,35 @@ module StraightServer
       raise GatewayInactive unless self.active
 
       StraightServer.logger.info "Creating new order with attrs: #{attrs}"
-      signature = attrs.delete(:signature)
-      if !check_signature || sign_with_secret(attrs[:keychain_id]) == signature
-        raise InvalidOrderId if check_signature && (attrs[:keychain_id].nil? || attrs[:keychain_id].to_i <= 0)
 
-        # If we decide to reuse the order, we simply need to supply the
-        # keychain_id that was used in the order we're reusing.
-        # The address will be generated correctly.
-        if reused_order = find_reusable_order
-          attrs[:keychain_id] = reused_order.keychain_id
-        end
-        attrs[:keychain_id] = nil if attrs[:keychain_id] == ''
-
-        order = new_order(
-          amount:           (attrs[:amount] && attrs[:amount].to_f),
-          keychain_id:      attrs[:keychain_id] || self.last_keychain_id+1,
-          currency:         attrs[:currency],
-          btc_denomination: attrs[:btc_denomination]
-        )
-        order.id            = attrs[:id].to_i       if attrs[:id]
-        order.data          = attrs[:data]          if attrs[:data]
-        order.callback_data = attrs[:callback_data] if attrs[:callback_data]
-        order.title         = attrs[:title]         if attrs[:title]
-        order.callback_url  = attrs[:callback_url]  if attrs[:callback_url]
-        order.gateway       = self
-        order.description   = attrs[:description]
-        order.reused        = reused_order.reused + 1 if reused_order
-        order.save
-
-        self.update_last_keychain_id(attrs[:keychain_id]) unless order.reused > 0
-        self.save
-        StraightServer.logger.info "Order #{order.id} created: #{order.to_h}"
-        order
-      else
-        StraightServer.logger.warn "Invalid signature, cannot create an order for gateway (#{id})"
-        raise InvalidSignature
+      # If we decide to reuse the order, we simply need to supply the
+      # keychain_id that was used in the order we're reusing.
+      # The address will be generated correctly.
+      if reused_order = find_reusable_order
+        attrs[:keychain_id] = reused_order.keychain_id
       end
+      attrs[:keychain_id] = nil if attrs[:keychain_id] == ''
+
+      order = new_order(
+        amount:           (attrs[:amount] && attrs[:amount].to_f),
+        keychain_id:      attrs[:keychain_id] || self.last_keychain_id+1, # FIXME: not thread-safe
+        currency:         attrs[:currency],
+        btc_denomination: attrs[:btc_denomination]
+      )
+      order.id            = attrs[:id].to_i       if attrs[:id]
+      order.data          = attrs[:data]          if attrs[:data]
+      order.callback_data = attrs[:callback_data] if attrs[:callback_data]
+      order.title         = attrs[:title]         if attrs[:title]
+      order.callback_url  = attrs[:callback_url]  if attrs[:callback_url]
+      order.gateway       = self
+      order.description   = attrs[:description]
+      order.reused        = reused_order.reused + 1 if reused_order
+      order.save
+
+      self.update_last_keychain_id(attrs[:keychain_id]) unless order.reused > 0
+      self.save
+      StraightServer.logger.info "Order #{order.id} created: #{order.to_h}"
+      order
     end
 
     def update_last_keychain_id(new_value=nil)
@@ -244,18 +237,21 @@ module StraightServer
       # making 10 http requests, each delayed by twice the time the previous one was delayed.
       # This method is supposed to be running in a separate thread.
       def send_callback_http_request(order, delay: 5)
-        _callback_url = order.callback_url.nil? ? self.callback_url : order.callback_url
-        return if _callback_url.nil?
-
-        StraightServer.logger.info "Attempting to send request to the callback url for order #{order.id} to #{_callback_url}..."
+        url = order.callback_url || self.callback_url
+        return if url.to_s.empty?
 
         # Composing the request uri here
-        signature = self.check_signature ? "&signature=#{sign_with_secret(order.id)}" : ''
-        callback_data = order.callback_data ? "&callback_data=#{order.callback_data}" : ''
-        uri           = URI.parse(_callback_url + '?' + order.to_http_params + signature + callback_data)
+        callback_data = order.callback_data ? "&callback_data=#{CGI.escape(order.callback_data)}" : ''
+        uri           = URI.parse("#{url}#{url.include?('?') ? '&' : '?'}#{order.to_http_params}#{callback_data}")
+
+        StraightServer.logger.info "Attempting callback for order #{order.id}: #{uri.to_s}"
 
         begin
-          response = Net::HTTP.get_response(uri)
+          request = Net::HTTP::Get.new(uri.request_uri)
+          request.add_field 'X-Signature', SignatureValidator.signature(method: 'GET', request_uri: uri.request_uri, secret: secret, nonce: nil, body: nil)
+          response = Net::HTTP.new(uri.host, uri.port).start do |http|
+            http.request request
+          end
           order.callback_response = { code: response.code, body: response.body }
           order.save
           raise CallbackUrlBadResponse unless response.code.to_i == 200
