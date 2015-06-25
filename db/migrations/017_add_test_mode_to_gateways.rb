@@ -1,7 +1,7 @@
 Sequel.migration do
 
   up do
-    add_column :gateways, :test_mode, TrueClass, default: true
+    add_column :gateways, :test_mode, TrueClass, default: false
   end
 
   down do
