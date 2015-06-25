@@ -80,7 +80,7 @@ RSpec.describe StraightServer::OrdersController do
       @gateway1.check_signature = true
       5.times do |i|
         i += 1
-        send_request "POST", '/gateways/1/orders', amount: 10, keychain_id: i, signature: @gateway1.sign_with_secret(i)
+        send_signed_request @gateway1, "POST", '/gateways/1/orders', amount: 10, keychain_id: i
         expect(response[0]).to eq 200
         expect(response).to render_json_with(status: 0, amount: 10, tid: nil, id: :anything, keychain_id: i, last_keychain_id: i)
       end
@@ -186,18 +186,23 @@ RSpec.describe StraightServer::OrdersController do
       allow(StraightServer::Thread).to receive(:new)
       @gateway1                 = StraightServer::Gateway.find_by_id(1)
       @gateway1.check_signature = true
-      send_request "POST", '/gateways/1/orders', amount: 10, keychain_id: 1, signature: @gateway1.sign_with_secret(1)
-      payment_id = JSON.parse(response[2])['payment_id']
-      send_request "POST", "/gateways/1/orders/#{payment_id}/cancel"
-      expect(response).to eq [409, {}, "Invalid signature"]
-      send_request "POST", "/gateways/1/orders/#{payment_id}/cancel", signature: @gateway1.sign_with_secret(1, level: 2)
+      @order_mock = double('order mock')
+      allow(@order_mock).to receive(:status).with(reload: true)
+      allow(@order_mock).to receive(:status_changed?).and_return(false)
+      allow(@order_mock).to receive(:cancelable?).and_return(true)
+      expect(@order_mock).to receive(:cancel)
+      allow(StraightServer::Order).to receive(:[]).and_return(@order_mock)
+      send_request "POST", "/gateways/1/orders/payment_id/cancel"
+      expect(response).to eq [409, {}, 'X-Nonce is invalid: nil']
+      send_signed_request @gateway1, "POST", "/gateways/1/orders/payment_id/cancel"
       expect(response[0]).to eq 200
     end
 
     it "do not cancel orders with status != new" do
       @order_mock = double('order mock')
       allow(@order_mock).to receive(:status).with(reload: true)
-      allow(@order_mock).to receive(:status_changed?).and_return(false)
+      allow(@order_mock).to receive(:status_changed?).and_return(true)
+      expect(@order_mock).to receive(:save)
       allow(@order_mock).to receive(:cancelable?).and_return(false)
       allow(StraightServer::Order).to receive(:[]).and_return(@order_mock)
       send_request "POST", "/gateways/2/orders/payment_id/cancel"
@@ -205,7 +210,7 @@ RSpec.describe StraightServer::OrdersController do
     end
   end
 
-  it 'retutn last_keychain_id' do
+  it 'return last_keychain_id' do
     lk_id = 123
     @gateway = StraightServer::Gateway.find_by_id(1)
     @gateway.last_keychain_id = lk_id
@@ -215,7 +220,13 @@ RSpec.describe StraightServer::OrdersController do
   end
 
   def send_request(method, path, params={})
-    env = Hashie::Mash.new({ 'REQUEST_METHOD' => method, 'REQUEST_PATH' => path, 'params' => params })
+    env = Hashie::Mash.new('REQUEST_METHOD' => method, 'REQUEST_PATH' => path, 'params' => params)
+    @controller = StraightServer::OrdersController.new(env)
+  end
+
+  def send_signed_request(gateway, method, path, params={})
+    env = Hashie::Mash.new('REQUEST_METHOD' => method, 'REQUEST_PATH' => path, 'params' => params, 'HTTP_X_NONCE' => (Time.now.to_f * 1e6).to_i)
+    env['HTTP_X_SIGNATURE'] = StraightServer::SignatureValidator.new(gateway, env).signature
     @controller = StraightServer::OrdersController.new(env)
   end
 
