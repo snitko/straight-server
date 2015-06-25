@@ -1,18 +1,8 @@
+require 'securerandom'
+
 class String
 
   def self.random(len)
-    s = ""
-    while s.length != len do
-      s = rand(36**len).to_s(36) 
-    end
-    s
+    BTC::Base58.base58_from_data(SecureRandom.random_bytes(len))[0, len]
   end
-
-  def repeat(times)
-    result = ""
-    times.times { result << self }
-    result
-  end
-
 end
-

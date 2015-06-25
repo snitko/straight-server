@@ -26,9 +26,9 @@ RSpec.describe StraightServer::OrdersController do
     end
 
     it "renders 409 error when an order cannot be created due to other validation errors" do
-      send_request "POST", '/gateways/2/orders', amount: 1, description: String.random(257)
+      send_request "POST", '/gateways/2/orders', amount: 1, description: 'A'*256
       expect(response[0]).to eq(409)
-      expect(response[2]).to eq("Invalid order: description should be shorter than 255 charachters")
+      expect(response[2]).to eq("Invalid order: description should be shorter than 256 characters")
     end
 
     it "starts tracking the order status in a separate thread" do

@@ -94,7 +94,7 @@ module StraightServer
       errors.add(:amount,      "should be more than 0") if amount && amount <= 0
       errors.add(:amount_paid, "is not numeric") if !amount.kind_of?(Numeric)
       errors.add(:gateway_id,  "is invalid") if !gateway_id.kind_of?(Numeric) || gateway_id <= 0
-      errors.add(:description, "should be shorter than 255 charachters") if description.kind_of?(String) && description.length > 255
+      errors.add(:description, "should be shorter than 256 characters") if description.kind_of?(String) && description.length > 255
       errors.add(:gateway,     "is inactive, cannot create order for inactive gateway") unless gateway.active
       validates_unique   :id
       validates_presence [:address, :keychain_id, :gateway_id, :amount]
