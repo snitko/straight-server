@@ -7,7 +7,6 @@ source 'https://rubygems.org' do
   gem 'logmaster', '0.1.5'
   gem 'ruby-hmac'
   gem 'httparty'
-  gem 'money-tree', '0.9.0'
   gem 'redis'
 end
 
