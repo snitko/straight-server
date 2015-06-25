@@ -8,6 +8,7 @@ source 'https://rubygems.org' do
   gem 'ruby-hmac'
   gem 'httparty'
   gem 'redis'
+  gem 'btcruby'
 end
 
 unless ENV['STRAIGHT_SERVER_IGNORE_ADDONS_GEMFILE'] # use this flag when building straight-server.gemspec
