@@ -46,7 +46,8 @@ RSpec.describe StraightServer::Gateway do
   end
 
   it "loads blockchain adapters according to the config file" do
-    expect(@gateway.blockchain_adapters.map(&:class)).to eq([Straight::Blockchain::BlockchainInfoAdapter, Straight::Blockchain::MyceliumAdapter])
+    gateway = StraightServer::GatewayOnConfig.find_by_id(2)
+    expect(gateway.blockchain_adapters.map(&:class)).to eq([Straight::Blockchain::BlockchainInfoAdapter, Straight::Blockchain::MyceliumAdapter])
   end
 
   it "updates last_keychain_id to the new value provided in keychain_id if it's larger than the last_keychain_id" do
@@ -258,6 +259,27 @@ RSpec.describe StraightServer::Gateway do
 
     it "searches for Gateway using regular ids when find_by_hashed_id method is called" do
       expect(StraightServer::GatewayOnConfig.find_by_hashed_id(1)).not_to be_nil
+    end
+
+    it "set test mode `on` based on config" do
+      @gateway = StraightServer::GatewayOnConfig.find_by_id(1)
+      expect(@gateway.test_mode).to be true
+    end
+
+    it "set test mode `off`" do
+      @gateway = StraightServer::GatewayOnConfig.find_by_id(2)
+      expect(@gateway.test_mode).to be false
+    end
+
+    it "using testnet when test mode is enabled" do
+      @gateway = StraightServer::GatewayOnConfig.find_by_id(1)
+      expect(@gateway.blockchain_adapters).to eq([Straight::Blockchain::MyceliumAdapter.testnet_adapter])
+    end
+
+    it "disable test mode manually" do
+      @gateway = StraightServer::GatewayOnConfig.find_by_id(1)
+      @gateway.test_mode = false
+      expect(@gateway.blockchain_adapters).to_not eq([Straight::Blockchain::MyceliumAdapter.testnet_adapter])
     end
 
   end

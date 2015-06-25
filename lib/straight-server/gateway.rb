@@ -542,6 +542,7 @@ module StraightServer
       gateway.active                         = attrs['active']
       gateway.address_provider               = attrs['address_provider'] || "Bip32"
       gateway.address_derivation_scheme      = attrs['address_derivation_scheme']
+      gateway.test_mode                      = attrs['test_mode'] || false
       gateway.name                     = name
       gateway.id                       = i
       gateway.exchange_rate_adapter_names = attrs['exchange_rate_adapters']
