@@ -380,6 +380,15 @@ RSpec.describe StraightServer::Gateway do
         @gateway.refresh
         expect(@gateway.test_mode).to be true
       end
+      
+      it "field updates in mass assigment" do
+        @gateway.save
+        fiedls = {test_mode: false}
+        @gateway.update(fiedls)
+        @gateway.refresh
+        expect(@gateway.test_mode).to be false
+      end
+      
     end
 
   end
