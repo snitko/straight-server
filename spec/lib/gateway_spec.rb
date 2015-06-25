@@ -373,9 +373,10 @@ RSpec.describe StraightServer::Gateway do
       end
 
       it "enabled and saved" do
-        @gateway.test_mode = false
-        @gateway.save
+        @gateway[:test_mode] = false
+        expect(@gateway.test_mode).to eq false
         @gateway.enable_test_mode!
+        @gateway.save
         @gateway.refresh
         expect(@gateway.test_mode).to be true
       end
