@@ -316,6 +316,49 @@ RSpec.describe StraightServer::Gateway do
       expect(StraightServer::GatewayOnDB.find_by_hashed_id(hashed_id)).to eq(@gateway)
     end
 
+    context "test mode" do
+      it "activate after created" do
+        @gateway.save
+        expect(@gateway.test_mode).to be true
+      end
+
+      it "using testnet adapter" do
+        @gateway.save
+        expect(@gateway.blockchain_adapters).to eq([Straight::Blockchain::MyceliumAdapter.testnet_adapter])
+      end
+
+      it "not activated by default if mode is specified explicity" do
+        @gateway[:test_mode] = false
+        @gateway.save
+        expect(@gateway.test_mode).to be false
+        expect(@gateway.blockchain_adapters.map(&:class)).to eq([Straight::Blockchain::BlockchainInfoAdapter, Straight::Blockchain::MyceliumAdapter])
+      end
+
+      it "disabled and not saved" do
+        @gateway.save
+        @gateway.disable_test_mode!
+        expect(@gateway.test_mode).to be false
+        @gateway.refresh
+        expect(@gateway.test_mode).to be true
+      end
+
+      it "disabled and saved" do
+        @gateway.save
+        @gateway.disable_test_mode!
+        expect(@gateway.test_mode).to be false
+        @gateway.refresh
+        expect(@gateway.test_mode).to be true
+      end
+
+      it "enabled and saved" do
+        @gateway.test_mode = false
+        @gateway.save
+        @gateway.enable_test_mode!
+        @gateway.refresh
+        expect(@gateway.test_mode).to be true
+      end
+    end
+
   end
 
   describe "handling websockets" do

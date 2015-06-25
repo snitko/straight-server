@@ -414,6 +414,16 @@ module StraightServer
       Kernel.const_get("Straight::AddressProvider::#{self[:address_provider]}").new(self)
     end
 
+    def disable_test_mode!
+      self[:test_mode] = false
+      save(columns: 'test_mode')
+    end
+
+    def enable_test_mode!
+      self[:test_mode] = true
+      save(columns: 'test_mode')
+    end
+
     private
 
       def decrypt_secret(encrypted_field=self[:secret])
