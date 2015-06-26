@@ -22,6 +22,7 @@ Sequel.migration do
       String :address_provider, :default=>"Bip32", :size=>255
       String :address_derivation_scheme, :size=>255
       TrueClass :test_mode, :default=>false
+      Integer :test_last_keychain_id, :default=>0
       
       index [:hashed_id]
       index [:id], :unique=>true

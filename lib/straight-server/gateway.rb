@@ -124,7 +124,7 @@ module StraightServer
 
         order = new_order(
           amount:           (attrs[:amount] && attrs[:amount].to_f),
-          keychain_id:      attrs[:keychain_id] || self.last_keychain_id+1,
+          keychain_id:      attrs[:keychain_id] || get_next_last_keychain_id,
           currency:         attrs[:currency],
           btc_denomination: attrs[:btc_denomination]
         )
@@ -148,9 +148,18 @@ module StraightServer
       end
     end
 
+    def get_next_last_keychain_id
+      return self.test_last_keychain_id + 1 if self.test_mode
+      self.last_keychain_id + 1
+    end
+
+    # TODO: make it preaty
     def update_last_keychain_id(new_value=nil)
-      #new_value = nil if new_value && new_value.empty?
-      new_value ? self.last_keychain_id = new_value : self.last_keychain_id += 1
+      if self.test_mode
+        new_value ? self.test_last_keychain_id = new_value : self.test_last_keychain_id += 1
+      else
+        new_value ? self.last_keychain_id = new_value : self.last_keychain_id += 1
+      end
     end
 
     def add_websocket_for_order(ws, order)
@@ -352,6 +361,8 @@ module StraightServer
     def before_create
       super
       encrypt_secret
+      self.test_mode ||= false
+      self.test_last_keychain_id ||= 0
     end
 
     def before_update
@@ -452,7 +463,7 @@ module StraightServer
     attr_accessor :secret
 
     # This is used to generate the next address to accept payments
-    attr_accessor :last_keychain_id
+    attr_accessor :last_keychain_id, :test_last_keychain_id
 
     # If set to false, doesn't require an unique id of the order along with
     # the signed md5 hash of that id + secret to be passed into the #create_order method.
@@ -497,7 +508,7 @@ module StraightServer
     # If the file doesn't exist, we create it. Later, whenever an attribute is updated,
     # we save it to the file.
     def load_last_keychain_id!
-      @last_keychain_id_file ||= StraightServer::Initializer::ConfigDir.path + "/#{name}_last_keychain_id"
+      @last_keychain_id_file ||= build_keychain_path
       if File.exists?(@last_keychain_id_file)
         self.last_keychain_id = File.read(@last_keychain_id_file).to_i
       else
@@ -507,8 +518,13 @@ module StraightServer
     end
 
     def save_last_keychain_id!
-      @last_keychain_id_file ||= StraightServer::Initializer::ConfigDir.path + "/#{name}_last_keychain_id"
+      @last_keychain_id_file ||= build_keychain_path
       File.open(@last_keychain_id_file, 'w') {|f| f.write(last_keychain_id) }
+    end
+
+    def build_keychain_path
+      filename = self.test_mode ? "/#{name}_test_last_keychain_id" : "/#{name}_last_keychain_id"
+      StraightServer::Initializer::ConfigDir.path + filename
     end
 
     def address_provider

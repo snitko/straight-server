@@ -51,11 +51,12 @@ RSpec.describe StraightServer::Gateway do
   end
 
   it "updates last_keychain_id to the new value provided in keychain_id if it's larger than the last_keychain_id" do
-    @gateway.create_order(amount: 2252.706, currency: 'USD', signature: hmac_sha256('100', 'secret'), keychain_id: 100)
-    expect(@gateway.last_keychain_id).to eq(100)
-    @gateway.create_order(amount: 2252.706, currency: 'USD', signature: hmac_sha256('150', 'secret'), keychain_id: 150)
-    expect(@gateway.last_keychain_id).to eq(150)
-    @gateway.create_order(amount: 2252.706, currency: 'USD', signature: hmac_sha256('50', 'secret'), keychain_id: 50)
+    gateway = StraightServer::GatewayOnConfig.find_by_id(2)
+    gateway.create_order(amount: 2252.706, currency: 'USD', signature: hmac_sha256('100', 'secret'), keychain_id: 100)
+    expect(gateway.last_keychain_id).to eq(100)
+    gateway.create_order(amount: 2252.706, currency: 'USD', signature: hmac_sha256('150', 'secret'), keychain_id: 150)
+    expect(gateway.last_keychain_id).to eq(150)
+    gateway.create_order(amount: 2252.706, currency: 'USD', signature: hmac_sha256('50', 'secret'), keychain_id: 50)
   end
 
   context "reusing addresses" do
@@ -246,15 +247,17 @@ RSpec.describe StraightServer::Gateway do
     end
 
     it "saves and retrieves last_keychain_id from the file in the .straight dir" do
+      @gateway = StraightServer::GatewayOnConfig.find_by_id(2)
       @gateway.check_signature = false
-      expect(File.read("#{ENV['HOME']}/.straight/default_last_keychain_id").to_i).to eq(0)
+      @gateway.save
+      expect(File.read("#{ENV['HOME']}/.straight/second_gateway_last_keychain_id").to_i).to eq(0)
       @gateway.update_last_keychain_id
       @gateway.save
-      expect(File.read("#{ENV['HOME']}/.straight/default_last_keychain_id").to_i).to eq(1)
+      expect(File.read("#{ENV['HOME']}/.straight/second_gateway_last_keychain_id").to_i).to eq(1)
 
       expect(@gateway).to receive(:new_order).with(@new_order_args.merge({ keychain_id: 2})).once.and_return(@order_mock)
       @gateway.create_order(amount: 1)
-      expect(File.read("#{ENV['HOME']}/.straight/default_last_keychain_id").to_i).to eq(2)
+      expect(File.read("#{ENV['HOME']}/.straight/second_gateway_last_keychain_id").to_i).to eq(2)
     end
 
     it "searches for Gateway using regular ids when find_by_hashed_id method is called" do
@@ -262,7 +265,6 @@ RSpec.describe StraightServer::Gateway do
     end
 
     it "set test mode `on` based on config" do
-      @gateway = StraightServer::GatewayOnConfig.find_by_id(1)
       expect(@gateway.test_mode).to be true
     end
 
@@ -280,6 +282,16 @@ RSpec.describe StraightServer::Gateway do
       @gateway = StraightServer::GatewayOnConfig.find_by_id(1)
       @gateway.test_mode = false
       expect(@gateway.blockchain_adapters).to_not eq([Straight::Blockchain::MyceliumAdapter.testnet_adapter])
+    end
+
+    it "save test_last_keychain_id file with approciate data" do
+      gateway = StraightServer::GatewayOnConfig.find_by_id(1)
+      gateway.check_signature = false
+      gateway.save
+      expect(File.read("#{ENV['HOME']}/.straight/default_test_last_keychain_id").to_i).to eq(0)
+      gateway.update_last_keychain_id
+      gateway.save
+      expect(File.read("#{ENV['HOME']}/.straight/default_test_last_keychain_id").to_i).to eq(1)
     end
 
   end
@@ -307,6 +319,7 @@ RSpec.describe StraightServer::Gateway do
       expect(DB[:gateways][:name => 'default'][:last_keychain_id]).to eq(0)
       @gateway.update_last_keychain_id
       @gateway.save
+      @gateway.refresh
       expect(DB[:gateways][:name => 'default'][:last_keychain_id]).to eq(1)
 
       expect(@gateway).to receive(:new_order).with(@new_order_args.merge({ keychain_id: 2})).once.and_return(@order_mock)
@@ -339,37 +352,38 @@ RSpec.describe StraightServer::Gateway do
     end
 
     context "test mode" do
-      it "activate after created" do
-        @gateway.save
-        expect(@gateway.test_mode).to be true
-      end
-
-      it "using testnet adapter" do
-        @gateway.save
-        expect(@gateway.blockchain_adapters).to eq([Straight::Blockchain::MyceliumAdapter.testnet_adapter])
-      end
-
-      it "not activated by default if mode is specified explicity" do
-        @gateway[:test_mode] = false
+      it "not activate after created", focus: true do
         @gateway.save
         expect(@gateway.test_mode).to be false
+      end
+
+      it "not using testnet adapter by default" do
+        @gateway.save
+        expect(@gateway.blockchain_adapters).to_not eq([Straight::Blockchain::MyceliumAdapter.testnet_adapter])
+      end
+
+      it "activated if mode is specified explicity" do
+        @gateway.test_mode = true
+        @gateway.save
+        @gateway.refresh
+        expect(@gateway.test_mode).to be true
         expect(@gateway.blockchain_adapters.map(&:class)).to eq([Straight::Blockchain::BlockchainInfoAdapter, Straight::Blockchain::MyceliumAdapter])
       end
 
-      it "disabled and not saved" do
+      it "enabled and not saved" do
         @gateway.save
-        @gateway.disable_test_mode!
-        expect(@gateway.test_mode).to be false
-        @gateway.refresh
+        @gateway.enable_test_mode!
         expect(@gateway.test_mode).to be true
+        @gateway.refresh
+        expect(@gateway.test_mode).to be false
       end
 
-      it "disabled and saved" do
+      it "enabled and saved" do
         @gateway.save
-        @gateway.disable_test_mode!
-        expect(@gateway.test_mode).to be false
-        @gateway.refresh
+        @gateway.enable_test_mode!
         expect(@gateway.test_mode).to be true
+        @gateway.refresh
+        expect(@gateway.test_mode).to be false
       end
 
       it "enabled and saved" do
@@ -383,14 +397,25 @@ RSpec.describe StraightServer::Gateway do
       
       it "field updates in mass assigment" do
         @gateway.save
-        fiedls = {test_mode: false}
+        fiedls = {test_mode: true}
         @gateway.update(fiedls)
         @gateway.refresh
-        expect(@gateway.test_mode).to be false
+        expect(@gateway.test_mode).to be true
+      end
+
+      it "update test_last_keychain_id" do
+        @gateway.check_signature = false
+        @gateway.enable_test_mode!
+        @gateway.save
+        @gateway.refresh
+
+        expect(@gateway).to receive(:new_order).with(@new_order_args).once.and_return(@order_mock)
+        @gateway.create_order(amount: 1)
+        expect(DB[:gateways][:name => 'default'][:test_last_keychain_id]).to eq(1)
       end
       
     end
-
+ 
   end
 
   describe "handling websockets" do
