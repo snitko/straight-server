@@ -39,6 +39,13 @@ module StraightServer
         "    db:   null\n"
       end
     end
+    class NoTestPubkey < StandardError
+      def message
+        "No test public key were found! Gateway can't work in test mode without it.\n" +
+        "Please provide it in config file or DB."
+      end
+    end
+
 
     CALLBACK_URL_ATTEMPT_TIMEFRAME = 3600 # seconds
 
@@ -385,6 +392,11 @@ module StraightServer
       initialize_status_check_schedule
     end
 
+    def validate
+      super
+      errors.add(:test_pubkey, "Please provide test public key if you activate test mode") if test_mode && test_pubkey_blank?
+    end
+
     # We cannot allow to store gateway secret in a DB plaintext, this would be completetly unsecure.
     # Althougth we use symmetrical encryption here and store the encryption key in the
     # server's in a special file (~/.straight/server_secret), which in turn can also be stolen,
@@ -498,6 +510,10 @@ module StraightServer
       initialize_status_check_schedule
     end
 
+    def validate_config
+      raise NoTestPubkey if self.test_mode && test_pubkey_blank?
+    end
+
     # Because this is a config based gateway, we only save last_keychain_id
     # and nothing more.
     def save
@@ -526,7 +542,7 @@ module StraightServer
       filename = self.test_mode ? "/#{name}_test_last_keychain_id" : "/#{name}_last_keychain_id"
       StraightServer::Initializer::ConfigDir.path + filename
     end
-
+       
     def address_provider
       Kernel.const_get("Straight::AddressProvider::#{@address_provider}").new(self)
     end
@@ -548,6 +564,7 @@ module StraightServer
       i += 1
       gateway = self.new
       gateway.pubkey                         = attrs['pubkey']
+      gateway.test_pubkey                    = attrs['test_pubkey']
       gateway.confirmations_required         = attrs['confirmations_required'].to_i
       gateway.order_class                    = attrs['order_class']
       gateway.secret                         = attrs['secret']
@@ -562,6 +579,7 @@ module StraightServer
       gateway.name                     = name
       gateway.id                       = i
       gateway.exchange_rate_adapter_names = attrs['exchange_rate_adapters']
+      gateway.validate_config
       gateway.initialize_exchange_rate_adapters
       gateway.load_last_keychain_id!
       @@websockets[i] = {}

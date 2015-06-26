@@ -352,7 +352,12 @@ RSpec.describe StraightServer::Gateway do
     end
 
     context "test mode" do
-      it "not activate after created", focus: true do
+
+      before(:each) do
+        @gateway.test_pubkey = "txpub"
+      end
+      
+      it "not activate after created" do
         @gateway.save
         expect(@gateway.test_mode).to be false
       end
@@ -412,6 +417,16 @@ RSpec.describe StraightServer::Gateway do
         expect(@gateway).to receive(:new_order).with(@new_order_args).once.and_return(@order_mock)
         @gateway.create_order(amount: 1)
         expect(DB[:gateways][:name => 'default'][:test_last_keychain_id]).to eq(1)
+      end
+      
+      it "validate that public key is provided when saving with save mode flag" do
+        @gateway = StraightServer::GatewayOnDB.new(
+            confirmations_required: 0,
+            pubkey:      'xpub-000',
+            test_mode:   true
+      )
+        expect(@gateway.valid?).to be false
+        expect(@gateway.errors[:test_pubkey]).to_not be_empty
       end
       
     end
