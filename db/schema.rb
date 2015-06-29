@@ -21,6 +21,9 @@ Sequel.migration do
       String :hashed_id, :size=>255
       String :address_provider, :default=>"Bip32", :size=>255, :null=>false
       String :address_derivation_scheme, :size=>255
+      TrueClass :test_mode, :default=>true
+      Integer :test_last_keychain_id, :default=>0
+      String :test_pubkey, :size=>255
       
       index [:hashed_id]
       index [:id], :unique=>true
@@ -47,6 +50,7 @@ Sequel.migration do
       String :amount_paid
       String :callback_url, :size=>255
       String :title, :size=>255
+      TrueClass :test_mode
       
       index [:address]
       index [:id], :unique=>true

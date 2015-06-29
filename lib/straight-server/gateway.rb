@@ -8,10 +8,6 @@ module StraightServer
 
     @@websockets = {}
 
-    def fetch_transactions_for(address)
-      try_adapters(@blockchain_adapters, type: 'blockchain') { |b| b.fetch_transactions_for(address) }
-    end
-
     class CallbackUrlBadResponse     < StraightServerError; end
     class WebsocketExists            < StraightServerError; end
     class WebsocketForCompletedOrder < StraightServerError; end
@@ -37,6 +33,12 @@ module StraightServer
         "    host: localhost\n" +
         "    port: 6379\n" +
         "    db:   null\n"
+      end
+    end
+    class NoTestPubkey < StraightServerError
+      def message
+        "No test public key were found! Gateway can't work in test mode without it.\n" +
+        "Please provide it in config file or DB."
       end
     end
 
@@ -99,6 +101,10 @@ module StraightServer
     def initialize_status_check_schedule
       @status_check_schedule = Straight::GatewayModule::DEFAULT_STATUS_CHECK_SCHEDULE
     end
+
+    def initialize_network
+      BTC::Network.default = test_mode ? BTC::Network.testnet : BTC::Network.mainnet
+    end
     #
     ############# END OF Initializers methods ##################################################
 
@@ -119,21 +125,22 @@ module StraightServer
       end
       attrs[:keychain_id] = nil if attrs[:keychain_id] == ''
 
-      order = new_order(
-        amount:           (attrs[:amount] && attrs[:amount].to_f),
-        keychain_id:      attrs[:keychain_id] || self.last_keychain_id+1, # FIXME: not thread-safe
-        currency:         attrs[:currency],
-        btc_denomination: attrs[:btc_denomination]
-      )
-      order.id            = attrs[:id].to_i       if attrs[:id]
-      order.data          = attrs[:data]          if attrs[:data]
-      order.callback_data = attrs[:callback_data] if attrs[:callback_data]
-      order.title         = attrs[:title]         if attrs[:title]
-      order.callback_url  = attrs[:callback_url]  if attrs[:callback_url]
-      order.gateway       = self
-      order.description   = attrs[:description]
-      order.reused        = reused_order.reused + 1 if reused_order
-      order.save
+        order = new_order(
+          amount:           (attrs[:amount] && attrs[:amount].to_f),
+          keychain_id:      attrs[:keychain_id] || get_next_last_keychain_id,
+          currency:         attrs[:currency],
+          btc_denomination: attrs[:btc_denomination]
+        )
+        order.id            = attrs[:id].to_i       if attrs[:id]
+        order.data          = attrs[:data]          if attrs[:data]
+        order.callback_data = attrs[:callback_data] if attrs[:callback_data]
+        order.title         = attrs[:title]         if attrs[:title]
+        order.callback_url  = attrs[:callback_url]  if attrs[:callback_url]
+        order.gateway       = self
+        order.test_mode     = test_mode
+        order.description   = attrs[:description]
+        order.reused        = reused_order.reused + 1 if reused_order
+        order.save
 
       self.update_last_keychain_id(attrs[:keychain_id]) unless order.reused > 0
       self.save
@@ -141,9 +148,18 @@ module StraightServer
       order
     end
 
+    def get_next_last_keychain_id
+      return self.test_last_keychain_id + 1 if self.test_mode
+      self.last_keychain_id + 1
+    end
+
+    # TODO: make it preaty
     def update_last_keychain_id(new_value=nil)
-      #new_value = nil if new_value && new_value.empty?
-      new_value ? self.last_keychain_id = new_value : self.last_keychain_id += 1
+      if self.test_mode
+        new_value ? self.test_last_keychain_id = new_value : self.test_last_keychain_id += 1
+      else
+        new_value ? self.last_keychain_id = new_value : self.last_keychain_id += 1
+      end
     end
 
     def add_websocket_for_order(ws, order)
@@ -348,6 +364,8 @@ module StraightServer
     def before_create
       super
       encrypt_secret
+      self.test_mode ||= false
+      self.test_last_keychain_id ||= 0
     end
 
     def before_update
@@ -368,6 +386,12 @@ module StraightServer
       initialize_exchange_rate_adapters
       initialize_blockchain_adapters
       initialize_status_check_schedule
+      initialize_network
+    end
+
+    def validate
+      super
+      errors.add(:test_pubkey, "Please provide test public key if you activate test mode") if test_mode && test_pubkey_blank?
     end
 
     # We cannot allow to store gateway secret in a DB plaintext, this would be completetly unsecure.
@@ -410,6 +434,16 @@ module StraightServer
       Kernel.const_get("Straight::AddressProvider::#{self[:address_provider]}").new(self)
     end
 
+    def disable_test_mode!
+      self[:test_mode] = false
+      save(columns: 'test_mode')
+    end
+
+    def enable_test_mode!
+      self[:test_mode] = true
+      save(columns: 'test_mode')
+    end
+
     private
 
       def decrypt_secret(encrypted_field=self[:secret])
@@ -438,7 +472,7 @@ module StraightServer
     attr_accessor :secret
 
     # This is used to generate the next address to accept payments
-    attr_accessor :last_keychain_id
+    attr_accessor :last_keychain_id, :test_last_keychain_id
 
     # If set to false, doesn't require an unique id of the order along with
     # the signed md5 hash of that id + secret to be passed into the #create_order method.
@@ -471,6 +505,11 @@ module StraightServer
       initialize_exchange_rate_adapters
       initialize_blockchain_adapters
       initialize_status_check_schedule
+      initialize_network
+    end
+
+    def validate_config
+      raise NoTestPubkey if self.test_mode && test_pubkey_blank?
     end
 
     # Because this is a config based gateway, we only save last_keychain_id
@@ -483,7 +522,7 @@ module StraightServer
     # If the file doesn't exist, we create it. Later, whenever an attribute is updated,
     # we save it to the file.
     def load_last_keychain_id!
-      @last_keychain_id_file ||= StraightServer::Initializer::ConfigDir.path + "/#{name}_last_keychain_id"
+      @last_keychain_id_file ||= build_keychain_path
       if File.exists?(@last_keychain_id_file)
         self.last_keychain_id = File.read(@last_keychain_id_file).to_i
       else
@@ -493,10 +532,15 @@ module StraightServer
     end
 
     def save_last_keychain_id!
-      @last_keychain_id_file ||= StraightServer::Initializer::ConfigDir.path + "/#{name}_last_keychain_id"
+      @last_keychain_id_file ||= build_keychain_path
       File.open(@last_keychain_id_file, 'w') {|f| f.write(last_keychain_id) }
     end
 
+    def build_keychain_path
+      filename = self.test_mode ? "/#{name}_test_last_keychain_id" : "/#{name}_last_keychain_id"
+      StraightServer::Initializer::ConfigDir.path + filename
+    end
+       
     def address_provider
       Kernel.const_get("Straight::AddressProvider::#{@address_provider}").new(self)
     end
@@ -518,6 +562,7 @@ module StraightServer
       i += 1
       gateway = self.new
       gateway.pubkey                         = attrs['pubkey']
+      gateway.test_pubkey                    = attrs['test_pubkey']
       gateway.confirmations_required         = attrs['confirmations_required'].to_i
       gateway.order_class                    = attrs['order_class']
       gateway.secret                         = attrs['secret']
@@ -528,9 +573,11 @@ module StraightServer
       gateway.active                         = attrs['active']
       gateway.address_provider               = attrs['address_provider'] || "Bip32"
       gateway.address_derivation_scheme      = attrs['address_derivation_scheme']
+      gateway.test_mode                      = attrs['test_mode'] || false
       gateway.name                     = name
       gateway.id                       = i
       gateway.exchange_rate_adapter_names = attrs['exchange_rate_adapters']
+      gateway.validate_config
       gateway.initialize_exchange_rate_adapters
       gateway.load_last_keychain_id!
       @@websockets[i] = {}
