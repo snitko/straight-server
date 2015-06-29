@@ -32,11 +32,12 @@ RSpec.describe StraightServer::Gateway do
   end
 
   it "updates last_keychain_id to the new value provided in keychain_id if it's larger than the last_keychain_id" do
-    @gateway.create_order(amount: 2252.706, currency: 'BTC', keychain_id: 100)
-    expect(@gateway.last_keychain_id).to eq(100)
-    @gateway.create_order(amount: 2252.706, currency: 'BTC', keychain_id: 150)
-    expect(@gateway.last_keychain_id).to eq(150)
-    @gateway.create_order(amount: 2252.706, currency: 'BTC', keychain_id: 50)
+    gateway = StraightServer::GatewayOnConfig.find_by_id(2)
+    gateway.create_order(amount: 2252.706, currency: 'BTC', keychain_id: 100)
+    expect(gateway.last_keychain_id).to eq(100)
+    gateway.create_order(amount: 2252.706, currency: 'BTC', keychain_id: 150)
+    expect(gateway.last_keychain_id).to eq(150)
+    gateway.create_order(amount: 2252.706, currency: 'BTC', keychain_id: 50)
   end
 
   context "reusing addresses" do

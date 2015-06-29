@@ -4,7 +4,7 @@ Sequel.migration do
       primary_key :id
       Integer :confirmations_required, :default=>0, :null=>false
       Integer :last_keychain_id, :default=>0, :null=>false
-      String :pubkey, :size=>255, :null=>false
+      String :pubkey, :size=>255
       String :order_class, :size=>255, :null=>false
       String :secret, :size=>255, :null=>false
       String :name, :size=>255, :null=>false
@@ -19,7 +19,7 @@ Sequel.migration do
       TrueClass :active, :default=>true
       String :order_counters, :size=>255
       String :hashed_id, :size=>255
-      String :address_provider, :default=>"Bip32", :size=>255
+      String :address_provider, :default=>"Bip32", :size=>255, :null=>false
       String :address_derivation_scheme, :size=>255
       TrueClass :test_mode, :default=>true
       Integer :test_last_keychain_id, :default=>0
