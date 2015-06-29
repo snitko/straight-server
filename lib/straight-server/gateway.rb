@@ -6,10 +6,6 @@ module StraightServer
 
     @@websockets = {}
 
-    def fetch_transactions_for(address)
-      try_adapters(@blockchain_adapters, type: 'blockchain') { |b| b.fetch_transactions_for(address) }
-    end
-
     class InvalidSignature           < Exception; end
     class InvalidOrderId             < Exception; end
     class CallbackUrlBadResponse     < Exception; end
