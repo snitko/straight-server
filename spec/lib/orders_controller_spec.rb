@@ -184,13 +184,14 @@ RSpec.describe StraightServer::OrdersController do
 
     it "requires signature to cancel signed order" do
       allow(StraightServer::Thread).to receive(:new)
-      @gateway1                 = StraightServer::Gateway.find_by_id(1)
-      @gateway1.check_signature = true
-      send_request "POST", '/gateways/1/orders', amount: 10, keychain_id: 1, signature: @gateway1.sign_with_secret(1)
+      gateway1                 = StraightServer::Gateway.find_by_id(1)
+      gateway1.check_signature = true
+      gateway1.test_mode = true
+      send_request "POST", '/gateways/1/orders', amount: 10, keychain_id: 1, signature: gateway1.sign_with_secret(1)
       payment_id = JSON.parse(response[2])['payment_id']
       send_request "POST", "/gateways/1/orders/#{payment_id}/cancel"
       expect(response).to eq [409, {}, "Invalid signature"]
-      send_request "POST", "/gateways/1/orders/#{payment_id}/cancel", signature: @gateway1.sign_with_secret(1, level: 2)
+      send_request "POST", "/gateways/1/orders/#{payment_id}/cancel", signature: gateway1.sign_with_secret(1, level: 2)
       expect(response[0]).to eq 200
     end
 
