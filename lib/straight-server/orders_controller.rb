@@ -1,8 +1,10 @@
 require_relative 'throttler'
+require_relative 'signature_validator'
 
 module StraightServer
 
   class OrdersController
+    include Goliath::Constants
 
     attr_reader :response
 
@@ -21,7 +23,9 @@ module StraightServer
         return [404, {}, "Gateway not found" ]
       end
 
-      unless @gateway.check_signature
+      if @gateway.check_signature
+        StraightServer::SignatureValidator.new(@gateway, @env).validate!
+      else
         ip = @env['HTTP_X_FORWARDED_FOR'].to_s
         ip = @env['REMOTE_ADDR'] if ip.empty?
         if StraightServer::Throttler.new(@gateway.id).deny?(ip)
@@ -66,11 +70,6 @@ module StraightServer
         [409, {}, "Invalid order: #{e.message}" ]
       rescue Straight::Gateway::OrderAmountInvalid => e
         [409, {}, "Invalid order: #{e.message}" ]
-      rescue StraightServer::GatewayModule::InvalidSignature
-        [409, {}, "Invalid signature for id: #{@params['order_id']}" ]
-      rescue StraightServer::GatewayModule::InvalidOrderId
-        StraightServer.logger.warn message = "An invalid id for order supplied: #{@params['order_id']}"
-        [409, {}, message ]
       rescue StraightServer::GatewayModule::GatewayInactive
         StraightServer.logger.warn message = "The gateway is inactive, you cannot create order with it"
         [503, {}, message ]
@@ -82,6 +81,10 @@ module StraightServer
       unless @gateway
         StraightServer.logger.warn "Gateway not found"
         return [404, {}, "Gateway not found" ]
+      end
+
+      if @gateway.check_signature
+        StraightServer::SignatureValidator.new(@gateway, @env).validate!
       end
 
       order = find_order
@@ -113,13 +116,12 @@ module StraightServer
         StraightServer.logger.warn "Gateway not found"
         return [404, {}, "Gateway not found"]
       end
+
+      if @gateway.check_signature
+        StraightServer::SignatureValidator.new(@gateway, @env).validate!
+      end
+
       if (order = find_order)
-        if @gateway.check_signature
-          signature = @gateway.sign_with_secret(order.keychain_id, level: 2)
-          if @params['signature'] != signature
-            return [409, {}, "Invalid signature"]
-          end
-        end
         order.status(reload: true)
         order.save if order.status_changed?
         if order.cancelable?
@@ -150,21 +152,30 @@ module StraightServer
 
         @gateway = StraightServer::Gateway.find_by_hashed_id(@request_path[1])
 
-        @response = if @request_path[3] # if an order id is supplied
-          @params['id'] = @request_path[3]
-          @params['id'] = @params['id'].to_i if @params['id'] =~ /\A\d+\Z/
-          if @request_path[4] == 'websocket'
-            websocket
-          elsif @request_path[4] == 'cancel'&& @method == 'POST'
-            cancel
-          elsif @request_path[4].nil? && @method == 'GET'
-            show
-          end
-        elsif @request_path[2] == 'last_keychain_id'
+        @response = begin
+          if @request_path[3] # if an order id is supplied
+            @params['id'] = @request_path[3]
+            @params['id'] = @params['id'].to_i if @params['id'] =~ /\A\d+\Z/
+            if @request_path[4] == 'websocket'
+              websocket
+            elsif @request_path[4] == 'cancel'&& @method == 'POST'
+              cancel
+            elsif @request_path[4].nil? && @method == 'GET'
+              show
+            end
+          elsif @request_path[2] == 'last_keychain_id'
             last_keychain_id
-        elsif @request_path[3].nil?# && @method == 'POST'
-          create
+          elsif @request_path[3].nil?# && @method == 'POST'
+            create
+          end
+        rescue StraightServer::SignatureValidator::InvalidNonce
+          StraightServer.logger.warn message = "X-Nonce is invalid: #{@env["#{HTTP_PREFIX}X_NONCE"].inspect}"
+          [409, {}, message]
+        rescue StraightServer::SignatureValidator::InvalidSignature
+          StraightServer.logger.warn message = "X-Signature is invalid: #{@env["#{HTTP_PREFIX}X_SIGNATURE"].inspect}"
+          [409, {}, message]
         end
+
         @response = [404, {}, "#{@method} /#{@request_path.join('/')} Not found"] if @response.nil?
       end
 

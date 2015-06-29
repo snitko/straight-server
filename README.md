@@ -206,35 +206,36 @@ Go to your `~/.straight/config.yml` directory and set two options for each of yo
     secret: 'a long string of random chars'
     check_signature: true
 
-This will force gateways to check signatures when you try to create a new order. A signature is
-a HMAC SHA256 hash of the secret and a keychain_id. Because you need keychain_id, it means you have
-to actually provide it manually in the params. It can be any integer > 0, but it's better
-that it is a consecutive integer, so keep track of the last keychain_id that was used in your
-application. A possible request (assuming secret is the line mentioned above in the sample config) would look like this:
+This will force gateways to check signatures when you try to create a new order.
+A signature is a `X-Signature` header with a string of about 88 chars: 
 
-    POST /gateways/1/orders?amount=1&keychain_id=1&signature=aa14c26b2ae892a8719b0c2c57f162b967bfbfbdcc38d8883714a0680cf20467
+    Base64StrictEncode(
+      HMAC-SHA512(
+        REQUEST_METHOD + REQUEST_URI + SHA512(X-Nonce + REQUEST_BODY),
+        GATEWAY_SECRET
+      )
+    )
 
-An example of obtaining such signature in Ruby:
+Where
 
-    require 'openssl'
-    
-    secret = 'a long string of random chars'
-    OpenSSL::HMAC.digest('sha256', secret, "1").unpack("H*").first # "1" may be order_id here
+* `REQUEST_METHOD`: `GET`, `POST`, etc.
+* `REQUEST_URI`: `/full/path/with?arguments&and#fragment`
+* `REQUEST_BODY`: final string with JSON or blank string
+* `X-Nonce`: header with an integer which must be incremented with each request (protects from replay attack), for example `(Time.now.to_f * 1000).to_i`
+* `SHA512`: [binary SHA-2, 512 bits](https://en.wikipedia.org/wiki/SHA-2)
+* `HMAC-SHA512`: [binary HMAC with SHA512](https://en.wikipedia.org/wiki/Hash-based_message_authentication_code)
+* `GATEWAY_SECRET`: key for HMAC
+* `Base64StrictEncode`: [Base64 encoding according to RFC 4648](https://en.wikipedia.org/wiki/Base64#RFC_4648)
 
-Straight server will also sign the callback url request. However, since keychain_id may potentially
-be shared between 2 or more orders, the callback signature is based on internal `order_id` returned
-with the json after you create the said order. Here's an example of such a signature:
+For Ruby users signing is already implemented in `straight-server-kit` gem. 
 
-    order.id #=> 234
-    secret = 'a long string of random chars'
-    h = OpenSSL::HMAC.digest('sha256', secret, 234).unpack("H*").first
+Straight server will also sign the callback url request. However, it will use blank X-Nonce.
 
-and then send the request to the callback url with that signature:
+    GET http://mystore.com/payment-callback?order_id=1&amount=10&amount_in_btc=0.0000001&amount_paid_in_btc=0.&status=1&address=address_1&tid=tid1&keychain_id=1&last_keychain_id=1&callback_data=so%3Fme+ran%26dom+data
+    X-Signature: S2P8A16+RPaegTzJnb0Eg91csb1SExjdnvadABmQvfoIry4POBp6WbA6UOSqXojzRevyC8Ya/5QrQTnNxIb4og==
 
-    GET http://mystore.com/payment-callback?order_id=234&amount=1&status=2&address=1NZov2nm6gRCGW6r4q1qHtxXurrWNpPr1q&tid=tid1&callback_data=some+random+data?signature=aa14c26b2ae892a8719b0c2c57f162b967bfbfbdcc38d8883714a0680cf20467&keychain_id=1&last_keychain_id=1
-
-It is now up to your application to calculate that signature, compare it and
-make sure that only one such request is allowed (that is, if signature was used, it cannot be used again).
+It is now up to your application to calculate that signature and compare it.
+If it doesn't match, do not trust data, instead log it for further investigation and return 200 in order to prevent retries.  
 
 What is keychain_id and why do we need it?
 ------------------------------------------
@@ -253,13 +254,6 @@ no more than N expired orders in a row. The respective setting in the config fil
 If you have 20 orders in a row and try to create another one, straight-server will see that and will
 automatically reuse the `keychain_id` (and consequently, the address too) of the 20-th order. It will
 also set the 21-st order's `reused` field to the value of `1`.
-
-CAUTION: while you don't need to provide `keychain_id` when creating orders with gateways that
-do not require signatures, you still must do it with gateways that do require signatures.
-In this case, it is very important to make sure that you don't accidentally provide `keychain_id`
-that is too far away from the last used one. For example, if the gateway's `last_keychain_id` is `10`,
-do not use `35` for the next order, use `11`. `last_gateway_id` is always returned with other info
-when you create or check order status.
 
 Querying the blockchain
 -----------------------

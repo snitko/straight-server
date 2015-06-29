@@ -7,7 +7,8 @@ source 'https://rubygems.org' do
   gem 'logmaster', '0.1.5'
   gem 'ruby-hmac'
   gem 'httparty'
-  gem 'money-tree', '0.9.0'
+  gem 'redis'
+  gem 'btcruby'
 end
 
 unless ENV['STRAIGHT_SERVER_IGNORE_ADDONS_GEMFILE'] # use this flag when building straight-server.gemspec
@@ -28,5 +29,5 @@ group :test do
   gem 'factory_girl'
   gem 'sqlite3'
   gem 'hashie'
-  gem 'redis'
+  gem 'webmock', require: false
 end

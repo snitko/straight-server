@@ -32,7 +32,7 @@ RSpec.describe StraightServer::Initializer do
     remove_tmp_dir
   end
 
-  # as #create_config_files method contains #exit method we need to rescue SystemExix: exit() error
+  # as #create_config_files method contains #exit method we need to rescue SystemExit: exit() error
   # and at the same time its good to assert that method execution went well, which we do in rescue
   let(:create_config_files) do
     begin

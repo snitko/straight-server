@@ -14,26 +14,6 @@ RSpec.describe StraightServer::Gateway do
     @new_order_args = { amount: 1, keychain_id: 1, currency: nil, btc_denomination: nil }
   end
 
-  it "checks for signature when creating a new order" do
-    @gateway.last_keychain_id = 0
-    expect( -> { @gateway.create_order(amount: 1, signature: 'invalid', id: 1) }).to raise_exception(StraightServer::GatewayModule::InvalidSignature)
-    expect(@gateway).to receive(:new_order).with(@new_order_args).once.and_return(@order_mock)
-    @gateway.create_order(amount: 1, signature: hmac_sha256(1, 'secret'), keychain_id: 1)
-  end
-
-  it "checks md5 signature only if that setting is set ON for a particular gateway" do
-    gateway1 = StraightServer::GatewayOnConfig.find_by_id(1)
-    gateway2 = StraightServer::GatewayOnConfig.find_by_id(2)
-    expect(gateway2).to receive(:new_order).with(@new_order_args).once.and_return(@order_mock)
-    expect( -> { gateway1.create_order(amount: 1, signature: 'invalid') }).to raise_exception
-    expect( -> { gateway2.create_order(amount: 1, signature: 'invalid') }).not_to raise_exception()
-  end
-
-  it "doesn't allow nil or empty order id if signature checks are enabled" do
-    expect( -> { @gateway.create_order(amount: 1, signature: hmac_sha256(nil, 'secret'), id: nil) }).to raise_exception(StraightServer::GatewayModule::InvalidOrderId)
-    expect( -> { @gateway.create_order(amount: 1, signature: hmac_sha256('', 'secret'), id: '') }).to raise_exception(StraightServer::GatewayModule::InvalidOrderId)
-  end
-
   it "sets order amount in satoshis calculated from another currency" do
     @gateway = StraightServer::GatewayOnConfig.find_by_id(2)
     allow(@gateway.exchange_rate_adapters.first).to receive(:rate_for).and_return(450.5412)
@@ -52,12 +32,11 @@ RSpec.describe StraightServer::Gateway do
   end
 
   it "updates last_keychain_id to the new value provided in keychain_id if it's larger than the last_keychain_id" do
-    gateway = StraightServer::GatewayOnConfig.find_by_id(2)
-    gateway.create_order(amount: 2252.706, currency: 'USD', signature: hmac_sha256('100', 'secret'), keychain_id: 100)
-    expect(gateway.last_keychain_id).to eq(100)
-    gateway.create_order(amount: 2252.706, currency: 'USD', signature: hmac_sha256('150', 'secret'), keychain_id: 150)
-    expect(gateway.last_keychain_id).to eq(150)
-    gateway.create_order(amount: 2252.706, currency: 'USD', signature: hmac_sha256('50', 'secret'), keychain_id: 50)
+    @gateway.create_order(amount: 2252.706, currency: 'BTC', keychain_id: 100)
+    expect(@gateway.last_keychain_id).to eq(100)
+    @gateway.create_order(amount: 2252.706, currency: 'BTC', keychain_id: 150)
+    expect(@gateway.last_keychain_id).to eq(150)
+    @gateway.create_order(amount: 2252.706, currency: 'BTC', keychain_id: 50)
   end
 
   context "reusing addresses" do
@@ -91,7 +70,7 @@ RSpec.describe StraightServer::Gateway do
 
     it "creates a new order with a reused address" do
       reused_order = @expired_orders_1.last
-      order        = @gateway.create_order(amount: 2252.706, currency: 'USD')
+      order        = @gateway.create_order(amount: 2252.706, currency: 'BTC')
       expect(order.keychain_id).to eq(reused_order.keychain_id)
       expect(order.address).to     eq(@gateway.address_provider.new_address(keychain_id: reused_order.keychain_id))
       expect(order.reused).to      eq(1)
@@ -99,22 +78,22 @@ RSpec.describe StraightServer::Gateway do
 
     it "doesn't increment last_keychain_id if order is reused" do
       last_keychain_id = @gateway.last_keychain_id
-      order = @gateway.create_order(amount: 2252.706, currency: 'USD')
+      order = @gateway.create_order(amount: 2252.706, currency: 'BTC')
       expect(@gateway.last_keychain_id).to eq(last_keychain_id)
 
       order.status = StraightServer::Order::STATUSES[:paid]
       order.save
-      order_2 = @gateway.create_order(amount: 2252.706, currency: 'USD')
+      order_2 = @gateway.create_order(amount: 2252.706, currency: 'BTC')
       expect(@gateway.last_keychain_id).to eq(last_keychain_id+1)
     end
 
     it "after the reused order was paid, gives next order a new keychain_id" do
-      order = @gateway.create_order(amount: 2252.706, currency: 'USD')
+      order = @gateway.create_order(amount: 2252.706, currency: 'BTC')
       order.status = StraightServer::Order::STATUSES[:expired]
       order.save
       expect(order.keychain_id).to eq(@expired_orders_1.last.keychain_id)
 
-      order = @gateway.create_order(amount: 2252.706, currency: 'USD')
+      order = @gateway.create_order(amount: 2252.706, currency: 'BTC')
       order.status = StraightServer::Order::STATUSES[:paid]
       order.save
       expect(@gateway.send(:find_expired_orders_row).map(&:id)).to be_empty
@@ -125,62 +104,47 @@ RSpec.describe StraightServer::Gateway do
   context "callback url" do
 
     before(:each) do
-      @gateway = StraightServer::GatewayOnConfig.find_by_id(2) # Gateway 2 doesn't require signatures
-      @response_mock = double("http response mock")
-      expect(@response_mock).to receive(:body).once.and_return('body')
-      @order = create(:order)
+      @gateway = StraightServer::GatewayOnConfig.find_by_id(2)
+      @order = build(:order, gateway: @gateway, address: 'address_1', keychain_id: 1, id: 1)
       allow(@order).to receive(:status).and_return(1)
       allow(@order).to receive(:tid).and_return('tid1')
     end
 
-    it "sends a request to the callback_url" do
-      expect(@response_mock).to receive(:code).twice.and_return("200")
-      expect(Net::HTTP).to receive(:get_response).and_return(@response_mock)
+    it "sends a request to the callback_url and saves response" do
+      stub_request(:get, 'http://localhost:3001/payment-callback?address=address_1&amount=10&amount_in_btc=0.0000001&amount_paid_in_btc=0.&keychain_id=1&last_keychain_id=0&order_id=1&status=1&tid=tid1').
+        with(headers: {'X-Signature' => 'waGfkiy5VdiAjOfzMXp4ShRF5FaOy7BfIKWzryKhNKVWdCToqTC2vt9aE/FNqc0mjVqAh3uQBfyRdC1YYPFr6g=='}).
+        to_return(status: 200, body: 'okay')
+      expect(@gateway).to receive(:sleep).exactly(0).times
       @gateway.order_status_changed(@order)
+      expect(@order.callback_response).to eq(code: '200', body: 'okay')
     end
 
     it "keeps sending request according to the callback schedule if there's an error" do
-      expect(@response_mock).to receive(:code).twice.and_return("404")
+      stub_request(:get, 'http://localhost:3001/payment-callback?address=address_1&amount=10&amount_in_btc=0.0000001&amount_paid_in_btc=0.&keychain_id=1&last_keychain_id=0&order_id=1&status=1&tid=tid1').
+        with(headers: {'X-Signature' => 'waGfkiy5VdiAjOfzMXp4ShRF5FaOy7BfIKWzryKhNKVWdCToqTC2vt9aE/FNqc0mjVqAh3uQBfyRdC1YYPFr6g=='}).
+        to_return(status: 404, body: '')
       expect(@gateway).to receive(:sleep).exactly(10).times
-      expect(Net::HTTP).to receive(:get_response).exactly(11).times.and_return(@response_mock)
-      expect(URI).to receive(:parse).with('http://localhost:3001/payment-callback?' + @order.to_http_params).exactly(11).times
-      @gateway.order_status_changed(@order)
-    end
-
-    it "signs the callback if gateway has a secret" do
-      @gateway = StraightServer::GatewayOnConfig.find_by_id(1) # Gateway 1 requires signatures
-      expect(@response_mock).to receive(:code).twice.and_return("200")
-      expect(URI).to receive(:parse).with('http://localhost:3000/payment-callback?' + @order.to_http_params + "&signature=#{hmac_sha256(@order.id, 'secret')}")
-      expect(Net::HTTP).to receive(:get_response).and_return(@response_mock)
       @gateway.order_status_changed(@order)
     end
 
     it "receives random data in :data params and sends it back in a callback request" do
-      @order.data = 'some random data'
+      uri = "/payment-callback?order_id=1&amount=10&amount_in_btc=0.0000001&amount_paid_in_btc=0.&status=1&address=address_1&tid=tid1&keychain_id=1&last_keychain_id=1&callback_data=so%3Fme+ran%26dom+data"
+      signature = 'S2P8A16+RPaegTzJnb0Eg91csb1SExjdnvadABmQvfoIry4POBp6WbA6UOSqXojzRevyC8Ya/5QrQTnNxIb4og=='
+      expect(StraightServer::SignatureValidator.signature(nonce: nil, body: nil, method: 'GET', request_uri: uri, secret: @gateway.secret)).to eq signature
+      stub_request(:get, "http://localhost:3001#{uri}").with(headers: {'X-Signature' => signature}).to_return(status: 200, body: '')
       expect(@gateway).to receive(:new_order).with(@new_order_args).once.and_return(@order)
-      @gateway.create_order(amount: 1, callback_data: 'some random data')
-      expect(@response_mock).to receive(:code).twice.and_return("200")
-      expect(Net::HTTP).to receive(:get_response).and_return(@response_mock)
-      expect(URI).to receive(:parse).with('http://localhost:3001/payment-callback?' + @order.to_http_params + "&callback_data=#{@order.data}")
+      @gateway.create_order(amount: 1, callback_data: 'so?me ran&dom data')
       @gateway.order_status_changed(@order)
     end
 
-    it "saves callback url response in the order's record in DB" do
-      allow(@response_mock).to receive(:code).and_return("200")
-      allow(Net::HTTP).to receive(:get_response).and_return(@response_mock)
+    it "uses callback_url from order when making callback" do
+      uri = '/?with=params&order_id=1&amount=10&amount_in_btc=0.0000001&amount_paid_in_btc=0.&status=1&address=address_1&tid=tid1&keychain_id=1&last_keychain_id=0'
+      signature = 'jCCEthsR0XsdDtMfEFBn1+G+XxoVTH1noO4yrdGUBJwH3ysF9QDuPGwWDlgrSqrEyxbJB1KoBIBbcRxaAE2iZA=='
+      expect(StraightServer::SignatureValidator.signature(nonce: nil, body: nil, method: 'GET', request_uri: uri, secret: @gateway.secret)).to eq signature
+      stub_request(:get, "http://new_url#{uri}").with(headers: {'X-Signature' => signature}).to_return(status: 200, body: '')
+      @order.callback_url = 'http://new_url?with=params'
       @gateway.order_status_changed(@order)
-      expect(@order.callback_response).to eq({code: "200", body: "body"})
     end
-
-    it "is use callback_url from order when making callback" do
-      order = @gateway.create_order(amount: 1, callback_url: 'http://new_url')
-      expect(@response_mock).to receive(:code).twice.and_return("200")
-      expect(URI).to receive(:parse).with('http://new_url?' + order.to_http_params)
-                      .and_return('parsed_uri')
-      expect(Net::HTTP).to receive(:get_response).with('parsed_uri').and_return(@response_mock)
-      @gateway.order_status_changed(order)
-    end
-
   end
 
   describe "order counters" do

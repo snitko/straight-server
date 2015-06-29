@@ -1,3 +1,5 @@
+require 'cgi'
+
 module StraightServer
 
   # This module contains common features of Gateway, later to be included
@@ -6,25 +8,23 @@ module StraightServer
 
     @@websockets = {}
 
-    class InvalidSignature           < Exception; end
-    class InvalidOrderId             < Exception; end
-    class CallbackUrlBadResponse     < Exception; end
-    class WebsocketExists            < Exception; end
-    class WebsocketForCompletedOrder < Exception; end
-    class GatewayInactive            < Exception; end
-    class NoBlockchainAdapters       < Exception
+    class CallbackUrlBadResponse     < StraightServerError; end
+    class WebsocketExists            < StraightServerError; end
+    class WebsocketForCompletedOrder < StraightServerError; end
+    class GatewayInactive            < StraightServerError; end
+    class NoBlockchainAdapters       < StraightServerError
       def message
         "No blockchain adapters were found! StraightServer cannot query the blockchain.\n" +
         "Check your ~/.straight/config.yml file and make sure valid blockchain adapters\n" +
         "are present."
       end
     end
-    class NoWebsocketsForNewGateway  < Exception
+    class NoWebsocketsForNewGateway  < StraightServerError
       def message
         "You're trying to get access to websockets on a Gateway that hasn't been saved yet"
       end
     end
-    class OrderCountersDisabled      < Exception
+    class OrderCountersDisabled      < StraightServerError
       def message
         "Please enable order counting in config file! You can do is using the following option:\n\n" +
         "  count_orders: true\n\n" +
@@ -35,13 +35,12 @@ module StraightServer
         "    db:   null\n"
       end
     end
-    class NoTestPubkey < StandardError
+    class NoTestPubkey < StraightServerError
       def message
         "No test public key were found! Gateway can't work in test mode without it.\n" +
         "Please provide it in config file or DB."
       end
     end
-
 
     CALLBACK_URL_ATTEMPT_TIMEFRAME = 3600 # seconds
 
@@ -117,17 +116,14 @@ module StraightServer
       raise GatewayInactive unless self.active
 
       StraightServer.logger.info "Creating new order with attrs: #{attrs}"
-      signature = attrs.delete(:signature)
-      if !check_signature || sign_with_secret(attrs[:keychain_id]) == signature
-        raise InvalidOrderId if check_signature && (attrs[:keychain_id].nil? || attrs[:keychain_id].to_i <= 0)
 
-        # If we decide to reuse the order, we simply need to supply the
-        # keychain_id that was used in the order we're reusing.
-        # The address will be generated correctly.
-        if reused_order = find_reusable_order
-          attrs[:keychain_id] = reused_order.keychain_id
-        end
-        attrs[:keychain_id] = nil if attrs[:keychain_id] == ''
+      # If we decide to reuse the order, we simply need to supply the
+      # keychain_id that was used in the order we're reusing.
+      # The address will be generated correctly.
+      if reused_order = find_reusable_order
+        attrs[:keychain_id] = reused_order.keychain_id
+      end
+      attrs[:keychain_id] = nil if attrs[:keychain_id] == ''
 
         order = new_order(
           amount:           (attrs[:amount] && attrs[:amount].to_f),
@@ -146,14 +142,10 @@ module StraightServer
         order.reused        = reused_order.reused + 1 if reused_order
         order.save
 
-        self.update_last_keychain_id(attrs[:keychain_id]) unless order.reused > 0
-        self.save
-        StraightServer.logger.info "Order #{order.id} created: #{order.to_h}"
-        order
-      else
-        StraightServer.logger.warn "Invalid signature, cannot create an order for gateway (#{id})"
-        raise InvalidSignature
-      end
+      self.update_last_keychain_id(attrs[:keychain_id]) unless order.reused > 0
+      self.save
+      StraightServer.logger.info "Order #{order.id} created: #{order.to_h}"
+      order
     end
 
     def get_next_last_keychain_id
@@ -261,27 +253,30 @@ module StraightServer
       # making 10 http requests, each delayed by twice the time the previous one was delayed.
       # This method is supposed to be running in a separate thread.
       def send_callback_http_request(order, delay: 5)
-        _callback_url = order.callback_url.nil? ? self.callback_url : order.callback_url
-        return if _callback_url.nil?
-
-        StraightServer.logger.info "Attempting to send request to the callback url for order #{order.id} to #{_callback_url}..."
+        url = order.callback_url || self.callback_url
+        return if url.to_s.empty?
 
         # Composing the request uri here
-        signature = self.check_signature ? "&signature=#{sign_with_secret(order.id)}" : ''
-        callback_data = order.callback_data ? "&callback_data=#{order.callback_data}" : ''
-        uri           = URI.parse(_callback_url + '?' + order.to_http_params + signature + callback_data)
+        callback_data = order.callback_data ? "&callback_data=#{CGI.escape(order.callback_data)}" : ''
+        uri           = URI.parse("#{url}#{url.include?('?') ? '&' : '?'}#{order.to_http_params}#{callback_data}")
+
+        StraightServer.logger.info "Attempting callback for order #{order.id}: #{uri.to_s}"
 
         begin
-          response = Net::HTTP.get_response(uri)
+          request = Net::HTTP::Get.new(uri.request_uri)
+          request.add_field 'X-Signature', SignatureValidator.signature(method: 'GET', request_uri: uri.request_uri, secret: secret, nonce: nil, body: nil)
+          response = Net::HTTP.new(uri.host, uri.port).start do |http|
+            http.request request
+          end
           order.callback_response = { code: response.code, body: response.body }
           order.save
           raise CallbackUrlBadResponse unless response.code.to_i == 200
-        rescue Exception => e
+        rescue => ex
           if delay < CALLBACK_URL_ATTEMPT_TIMEFRAME
             sleep(delay)
             send_callback_http_request(order, delay: delay*2)
           else
-            StraightServer.logger.warn "Callback request for order #{order.id} failed, see order's #callback_response field for details"
+            StraightServer.logger.warn "Callback request for order #{order.id} failed with #{ex.inspect}, see order's #callback_response field for details"
           end
         end
 

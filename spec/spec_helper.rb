@@ -30,6 +30,8 @@ require_relative 'support/custom_matchers'
 require "factory_girl"
 require_relative "factories"
 
+require 'webmock/rspec'
+
 # class StraightServer::Order
 #   alias :save! :save
 # end
@@ -49,7 +51,8 @@ RSpec.configure do |config|
     StraightServer.db_connection = DB #use a memory DB
   end
 
-  config.before(:each) do
+  config.before(:each) do |spec|
+    # puts spec.description
     DB[:orders].delete
     logger_mock = double("logger mock")
     [:debug, :info, :warn, :fatal, :unknown, :blank_lines].each do |e|
