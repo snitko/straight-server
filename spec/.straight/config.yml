@@ -9,6 +9,7 @@ reuse_address_orders_threshold: 5
 gateways:
   default:
     pubkey: 'xpub6Arp6y5VVQzq3LWTHz7gGsGKAdM697RwpWgauxmyCybncqoAYim6P63AasNKSy3VUAYXFj7tN2FZ9CM9W7yTfmerdtAPU4amuSNjEKyDeo6'
+    test_pubkey: 'tpubDCzMzH5R7dvZAN7jNyZRUXxuo8XdRmMd7gmzvHs9LYG4w2EBvEjQ1Drm8ZXv4uwxrtUh3MqCZQJaq56oPMghsbtFnoLi9JBfG7vRLXLH21r'
     confirmations_required: 0
     order_class: "StraightServer::Order"
     secret: 'secret'
@@ -48,5 +49,5 @@ db:
 redis:
   host: localhost
   port: 6379
-  db:   null
-  password: null
+  # db:   null
+  # password: null

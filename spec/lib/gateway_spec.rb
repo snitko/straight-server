@@ -9,7 +9,8 @@ RSpec.describe StraightServer::Gateway do
     allow(@order_mock).to receive(:description=)
     allow(@order_mock).to receive(:set_amount_paid)
     allow(@order_mock).to receive(:reused).and_return(0)
-    [:id, :gateway=, :save, :to_h, :id=].each { |m| allow(@order_mock).to receive(m) }
+    allow(@order_mock).to receive(:test_mode)
+    [:id, :gateway=, :save, :to_h, :id=, :test_mode=, :test_mode].each { |m| allow(@order_mock).to receive(m) }
     @new_order_args = { amount: 1, keychain_id: 1, currency: nil, btc_denomination: nil }
   end
 
@@ -275,7 +276,9 @@ RSpec.describe StraightServer::Gateway do
 
     it "using testnet when test mode is enabled" do
       @gateway = StraightServer::GatewayOnConfig.find_by_id(1)
-      expect(@gateway.blockchain_adapters).to eq([Straight::Blockchain::MyceliumAdapter.testnet_adapter])
+      testnet_adapter = Straight::Blockchain::MyceliumAdapter.testnet_adapter
+      expect(@gateway.blockchain_adapters.first.instance_variable_get(:@base_url))
+        .to eq(testnet_adapter.instance_variable_get(:@base_url))
     end
 
     it "disable test mode manually" do
@@ -372,7 +375,7 @@ RSpec.describe StraightServer::Gateway do
         @gateway.save
         @gateway.refresh
         expect(@gateway.test_mode).to be true
-        expect(@gateway.blockchain_adapters.map(&:class)).to eq([Straight::Blockchain::BlockchainInfoAdapter, Straight::Blockchain::MyceliumAdapter])
+        expect(@gateway.blockchain_adapters.map(&:class)).to eq([Straight::Blockchain::MyceliumAdapter])
       end
 
       it "enabled and not saved" do
