@@ -35,6 +35,12 @@ module StraightServer
         "    db:   null\n"
       end
     end
+    class NoPubkey < StraightServerError
+      def message
+        "No public key were found! Gateway can't work without it.\n" +
+        "Please provide it in config file or DB."
+      end
+    end
     class NoTestPubkey < StraightServerError
       def message
         "No test public key were found! Gateway can't work in test mode without it.\n" +
@@ -391,7 +397,8 @@ module StraightServer
 
     def validate
       super
-      errors.add(:test_pubkey, "Please provide test public key if you activate test mode") if test_mode && test_pubkey_blank?
+      errors.add(:pubkey, "Please provide public key") if pubkey_missing?
+      errors.add(:test_pubkey, "Please provide test public key if you activate test mode") if test_pubkey_missing?
     end
 
     # We cannot allow to store gateway secret in a DB plaintext, this would be completetly unsecure.
@@ -430,8 +437,12 @@ module StraightServer
       end
     end
 
+    def address_provider_type
+      self[:address_provider] ? self[:address_provider].to_sym : :Bip32
+    end
+
     def address_provider
-      Kernel.const_get("Straight::AddressProvider::#{self[:address_provider]}").new(self)
+      Kernel.const_get("Straight::AddressProvider::#{address_provider_type}").new(self)
     end
 
     def disable_test_mode!
@@ -509,7 +520,8 @@ module StraightServer
     end
 
     def validate_config
-      raise NoTestPubkey if self.test_mode && test_pubkey_blank?
+      raise NoPubkey if pubkey_missing?
+      raise NoTestPubkey if test_pubkey_missing?
     end
 
     # Because this is a config based gateway, we only save last_keychain_id
@@ -540,9 +552,13 @@ module StraightServer
       filename = self.test_mode ? "/#{name}_test_last_keychain_id" : "/#{name}_last_keychain_id"
       StraightServer::Initializer::ConfigDir.path + filename
     end
-       
+
+    def address_provider_type
+      @address_provider ? @address_provider.to_sym : :Bip32
+    end
+
     def address_provider
-      Kernel.const_get("Straight::AddressProvider::#{@address_provider}").new(self)
+      Kernel.const_get("Straight::AddressProvider::#{address_provider_type}").new(self)
     end
 
     # This method is a replacement for the Sequel's model one used in DB version of the gateway

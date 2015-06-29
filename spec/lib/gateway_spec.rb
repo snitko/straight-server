@@ -370,8 +370,8 @@ RSpec.describe StraightServer::Gateway do
       
       it "field updates in mass assigment" do
         @gateway.save
-        fiedls = {test_mode: true}
-        @gateway.update(fiedls)
+        fields = {test_mode: true}
+        @gateway.update(fields)
         @gateway.refresh
         expect(@gateway.test_mode).to be true
       end
@@ -387,18 +387,26 @@ RSpec.describe StraightServer::Gateway do
         expect(DB[:gateways][:name => 'default'][:test_last_keychain_id]).to eq(1)
       end
       
-      it "validate that public key is provided when saving with save mode flag" do
+      it "validate that test public key is provided when saving with test mode flag" do
         @gateway = StraightServer::GatewayOnDB.new(
-            confirmations_required: 0,
-            pubkey:      'xpub-000',
-            test_mode:   true
-      )
+          confirmations_required: 0,
+          pubkey:      'xpub-000',
+          test_mode:   true
+        )
         expect(@gateway.valid?).to be false
         expect(@gateway.errors[:test_pubkey]).to_not be_empty
       end
-      
+
+      it "doesn't require pubkey in test mode" do
+        @gateway = StraightServer::GatewayOnDB.new(
+          test_pubkey: 'xpub-000',
+          test_mode:   true,
+        )
+        expect(@gateway.valid?).to be true
+        @gateway.test_mode = false
+        expect(@gateway.valid?).to be false
+      end
     end
- 
   end
 
   describe "handling websockets" do
