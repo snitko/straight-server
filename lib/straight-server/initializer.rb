@@ -173,6 +173,7 @@ module StraightServer
         # an unclean shutdown of the server. Let's check and update the status manually once.
         if order.time_left_before_expiration < 1
           StraightServer.logger.info "Order #{order.id} seems to be expired, but status remains #{order.status}. Will check for status update manually."
+          order.gateway.test_mode = true if order.test_mode
           order.status(reload: true)
 
           # if we still see no transactions to that address,
