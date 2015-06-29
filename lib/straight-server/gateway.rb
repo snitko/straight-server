@@ -102,6 +102,10 @@ module StraightServer
     def initialize_status_check_schedule
       @status_check_schedule = Straight::GatewayModule::DEFAULT_STATUS_CHECK_SCHEDULE
     end
+
+    def initialize_network
+      BTC::Network.default = test_mode ? BTC::Network.testnet : BTC::Network.mainnet
+    end
     #
     ############# END OF Initializers methods ##################################################
 
@@ -137,6 +141,7 @@ module StraightServer
         order.title         = attrs[:title]         if attrs[:title]
         order.callback_url  = attrs[:callback_url]  if attrs[:callback_url]
         order.gateway       = self
+        order.test_mode     = test_mode
         order.description   = attrs[:description]
         order.reused        = reused_order.reused + 1 if reused_order
         order.save
@@ -386,6 +391,7 @@ module StraightServer
       initialize_exchange_rate_adapters
       initialize_blockchain_adapters
       initialize_status_check_schedule
+      initialize_network
     end
 
     def validate
@@ -504,6 +510,7 @@ module StraightServer
       initialize_exchange_rate_adapters
       initialize_blockchain_adapters
       initialize_status_check_schedule
+      initialize_network
     end
 
     def validate_config
