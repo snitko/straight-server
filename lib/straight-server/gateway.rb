@@ -108,6 +108,12 @@ module StraightServer
     #
     ############# END OF Initializers methods ##################################################
 
+    def fetch_transactions_for(address)
+      super
+    rescue Straight::Blockchain::Adapter::BitcoinAddressInvalid => e
+      StraightServer.logger.warn "Address seems to be invalid, ignoring it. #{e.message}"
+      return []
+    end
 
     # Creates a new order and saves into the DB. Checks if the MD5 hash
     # is correct first.
