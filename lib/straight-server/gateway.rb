@@ -73,18 +73,14 @@ module StraightServer
       @blockchain_adapters = []
       StraightServer::Config.blockchain_adapters.each do |a|
 
-        adapter = begin
-          Straight::Blockchain.const_get("#{a}Adapter")
-        rescue NameError
-          begin
-            Kernel.const_get(a)
-          rescue NameError
-            puts "WARNING: No blockchain adapter with the name #{a} was found!"
-            nil
-          end
+        adapter = Straight::Blockchain.const_get("#{a}Adapter")
+        next unless adapter
+        begin
+          adapter_url = StraightServer::Config.__send__("#{a.downcase}_url")
+          @blockchain_adapters << adapter.mainnet_adapter(adapter_url)
+        rescue NameError, ArgumentError
+          @blockchain_adapters << adapter.mainnet_adapter
         end
-
-        @blockchain_adapters << adapter.mainnet_adapter if adapter
       end
       raise NoBlockchainAdapters if @blockchain_adapters.empty?
     end
@@ -134,7 +130,9 @@ module StraightServer
       # The address will be generated correctly.
       if reused_order = find_reusable_order
         attrs[:keychain_id] = reused_order.keychain_id
+
       end
+      
       attrs[:keychain_id] = nil if attrs[:keychain_id] == ''
 
         order = new_order(

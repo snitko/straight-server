@@ -28,7 +28,14 @@ RSpec.describe StraightServer::Gateway do
 
   it "loads blockchain adapters according to the config file" do
     gateway = StraightServer::GatewayOnConfig.find_by_id(2)
-    expect(gateway.blockchain_adapters.map(&:class)).to eq([Straight::Blockchain::BlockchainInfoAdapter, Straight::Blockchain::MyceliumAdapter])
+    expect(gateway.blockchain_adapters.map(&:class)).to eq([Straight::Blockchain::InsightAdapter,
+                                                            Straight::Blockchain::BlockchainInfoAdapter,
+                                                            Straight::Blockchain::MyceliumAdapter])
+  end
+
+  it "loads Insight adapter with given host url" do
+    gateway = StraightServer::GatewayOnConfig.find_by_id(2)
+    expect(gateway.blockchain_adapters.first.class).to eq(Straight::Blockchain::InsightAdapter)
   end
 
   it "updates last_keychain_id to the new value provided in keychain_id if it's larger than the last_keychain_id" do

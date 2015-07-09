@@ -85,7 +85,11 @@ gateways:
 blockchain_adapters:
   - BlockchainInfo # uses Straight::Blockchain::BlockchainInfoAdapter
   - Mycelium       # uses Straight::Blockchain::MyceliumAdapter
+  - InsightAdapter # uses Straight::Blockchain::InsightAdapter
   # - MyCustomClass::MyCustomBlockchainAdapter
+
+# If Insight adapter set, necessary to provide url for it.
+# insight_url: "https://localhost/api"
 
 logmaster:
   log_level: INFO # Wise to change to WARN for production
