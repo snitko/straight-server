@@ -44,6 +44,7 @@ blockchain_adapters:
   - Mycelium
 
 insight_url: "https://insight.mycelium.com/api"
+insight_test_url: "https://test-insight.bitpay.com"
   
 db:
   adapter: sqlite
