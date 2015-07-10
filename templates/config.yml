@@ -85,7 +85,7 @@ gateways:
 blockchain_adapters:
   - BlockchainInfo # uses Straight::Blockchain::BlockchainInfoAdapter
   - Mycelium       # uses Straight::Blockchain::MyceliumAdapter
-  - InsightAdapter # uses Straight::Blockchain::InsightAdapter
+  # - InsightAdapter # uses Straight::Blockchain::InsightAdapter
   # - MyCustomClass::MyCustomBlockchainAdapter
 
 # If Insight adapter set, necessary to provide url for it.
