@@ -1,5 +1,5 @@
 source 'https://rubygems.org' do
-  gem 'straight', '0.2.4' #, path: '../straight-engine'
+  gem 'straight', '1.0.0' #, path: '../straight-engine'
   gem 'satoshi-unit'
   gem 'goliath'
   gem 'faye-websocket'
