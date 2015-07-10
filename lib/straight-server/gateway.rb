@@ -76,9 +76,10 @@ module StraightServer
         adapter = Straight::Blockchain.const_get("#{a}Adapter")
         next unless adapter
         begin
-          adapter_url = StraightServer::Config.__send__("#{a.downcase}_url")
-          @blockchain_adapters << adapter.mainnet_adapter(adapter_url)
-        rescue NameError, ArgumentError
+          main_url = StraightServer::Config.__send__("#{a.downcase}_url") rescue next
+          test_url = StraightServer::Config.__send__("#{a.downcase}_test_url") rescue nil
+          @blockchain_adapters << adapter.mainnet_adapter(main_url: main_url, test_url: test_url)
+        rescue ArgumentError
           @blockchain_adapters << adapter.mainnet_adapter
         end
       end
