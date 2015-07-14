@@ -39,9 +39,13 @@ gateways:
     active: true
 
 blockchain_adapters:
+  - Insight
   - BlockchainInfo
   - Mycelium
 
+insight_url: "https://insight.mycelium.com/api"
+insight_test_url: "https://test-insight.bitpay.com"
+  
 db:
   adapter: sqlite
   name: straight.db

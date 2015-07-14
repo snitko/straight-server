@@ -28,7 +28,14 @@ RSpec.describe StraightServer::Gateway do
 
   it "loads blockchain adapters according to the config file" do
     gateway = StraightServer::GatewayOnConfig.find_by_id(2)
-    expect(gateway.blockchain_adapters.map(&:class)).to eq([Straight::Blockchain::BlockchainInfoAdapter, Straight::Blockchain::MyceliumAdapter])
+    expect(gateway.blockchain_adapters.map(&:class)).to eq([Straight::Blockchain::InsightAdapter,
+                                                            Straight::Blockchain::BlockchainInfoAdapter,
+                                                            Straight::Blockchain::MyceliumAdapter])
+  end
+
+  it "loads Insight adapter with given host url" do
+    gateway = StraightServer::GatewayOnConfig.find_by_id(2)
+    expect(gateway.blockchain_adapters.first.class).to eq(Straight::Blockchain::InsightAdapter)
   end
 
   it "updates last_keychain_id to the new value provided in keychain_id if it's larger than the last_keychain_id" do
@@ -40,9 +47,10 @@ RSpec.describe StraightServer::Gateway do
     gateway.create_order(amount: 2252.706, currency: 'BTC', keychain_id: 50)
   end
 
-  it "only warns about an invalid Bitcoin address, but doesn't fail" do
+  it "only warns about an invalid Bitcoin address, but doesn't fail", one: true do
     expect(StraightServer.logger).to receive(:warn) 
     allow_any_instance_of(Straight::Blockchain::MyceliumAdapter).to receive(:api_request).and_return(nil)
+    allow_any_instance_of(Straight::Blockchain::InsightAdapter).to receive(:api_request).and_return(nil)
     # mainnet Bitcoin address, while we're on testnet
     expect(@gateway.fetch_transactions_for('12X3JTpcGPS1GXmuJn9gT3gspP6YFsFT6W')).to eq([])
   end
@@ -248,9 +256,21 @@ RSpec.describe StraightServer::Gateway do
 
     it "using testnet when test mode is enabled" do
       @gateway = StraightServer::GatewayOnConfig.find_by_id(1)
-      testnet_adapter = Straight::Blockchain::MyceliumAdapter.testnet_adapter
-      expect(@gateway.blockchain_adapters.first.instance_variable_get(:@base_url))
-        .to eq(testnet_adapter.instance_variable_get(:@base_url))
+      expect(@gateway.blockchain_adapters).to_not be nil
+      expect(@gateway.blockchain_adapters.map(&:class)).to eq(@gateway.test_blockchain_adapters.map(&:class))
+    end
+
+    it "using testnet adapter that url given in config" do
+      @gateway = StraightServer::GatewayOnConfig.find_by_id(1)
+      expect(@gateway.blockchain_adapters).to_not be nil
+      expect(@gateway.test_blockchain_adapters.first.class).to eq(Straight::Blockchain::InsightAdapter)
+    end
+
+    it "fallback to another adapter if on previous one not ready for testnet" do
+      @gateway = StraightServer::GatewayOnConfig.find_by_id(1)
+      Straight::Blockchain::InsightAdapter.class_eval("def self.test_url=(val) @@test_url=val end")
+      Straight::Blockchain::InsightAdapter.test_url = nil
+      expect(@gateway.test_blockchain_adapters.first.class).to eq(Straight::Blockchain::MyceliumAdapter)
     end
 
     it "disable test mode manually" do
@@ -339,7 +359,7 @@ RSpec.describe StraightServer::Gateway do
 
       it "not using testnet adapter by default" do
         @gateway.save
-        expect(@gateway.blockchain_adapters).to_not eq([Straight::Blockchain::MyceliumAdapter.testnet_adapter])
+        expect(@gateway.blockchain_adapters.map(&:class)).to_not eq(@gateway.test_blockchain_adapters.map(&:class))
       end
 
       it "activated if mode is specified explicity" do
@@ -347,7 +367,7 @@ RSpec.describe StraightServer::Gateway do
         @gateway.save
         @gateway.refresh
         expect(@gateway.test_mode).to be true
-        expect(@gateway.blockchain_adapters.map(&:class)).to eq([Straight::Blockchain::MyceliumAdapter])
+        expect(@gateway.blockchain_adapters.map(&:class)).to eq(@gateway.test_blockchain_adapters.map(&:class))
       end
 
       it "enabled and not saved" do
